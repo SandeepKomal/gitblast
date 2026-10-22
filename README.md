@@ -60,10 +60,20 @@ npm run build && npm start
 
 ### Deploying
 
-It is a standard Next.js app and runs on Vercel, or anywhere Node.js runs (`npm run build && npm start`). API
-routes set `Cache-Control` headers so a CDN can serve popular links. The rate limiter and cache live in memory
-on each instance; that is fine for one or a few instances. The rate limiter keys on `X-Forwarded-For`, so
-run it behind a proxy that sets that header (Vercel and most load balancers do).
+gitblast is a standard Next.js app. The simplest home is [Vercel](https://vercel.com), which is free for this
+size of project:
+
+1. Import this repository in Vercel. It detects Next.js; no build settings are needed.
+2. Add the environment variables: `GITHUB_TOKEN` (fine-grained, public repositories read-only) and
+   `NEXT_PUBLIC_SITE_URL=https://gitblast.com`.
+3. Add the `gitblast.com` domain under the project's domain settings and point DNS at Vercel.
+
+Every pull request then gets its own preview URL, and every push to `main` deploys to production.
+
+It also runs anywhere Node.js runs (`npm ci && npm run build && npm start`, port 3000). API routes set
+`Cache-Control` headers so a CDN can serve popular links. The rate limiter and cache live in memory on each
+instance, which is fine for one or a few instances. The rate limiter keys on `X-Forwarded-For`, so run it behind
+a proxy that sets that header (Vercel and most load balancers do).
 
 ## Being a good citizen
 
