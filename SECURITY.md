@@ -17,3 +17,5 @@ on this repository rather than in a public issue. You'll get a reply within a fe
   report is cached.
 - **Strict browser headers.** A content security policy limits scripts, images and connections to gitblast
   itself (plus GitHub avatars), and framing is denied.
+- **Static analysis on every change.** CodeQL scans the TypeScript and the GitHub Actions workflows on every
+  push and pull request, and weekly, with the extended security queries. Dependabot keeps dependencies current.
