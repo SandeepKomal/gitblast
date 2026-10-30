@@ -1,3 +1,10 @@
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/images/wordmark-dark.png">
+    <img src="docs/images/wordmark-light.png" width="348" alt="gitblast">
+  </picture>
+</p>
+
 # gitblast
 
 **Change one word in any GitHub link and see your code differently.**
