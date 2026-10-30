@@ -105,6 +105,14 @@ export interface Frame {
   langs: Record<string, number>;
 }
 
+export interface Milestone {
+  frame: number;
+  label: string;
+  kind: "folder" | "language" | "growth" | "cleanup";
+  /** The folder or language the moment is about, when there is one. */
+  key?: string;
+}
+
 export interface Timelapse {
   repo: RepoSummary & {
     defaultBranch: string;
@@ -115,7 +123,7 @@ export interface Timelapse {
   };
   totalCommits: number;
   frames: Frame[];
-  milestones: { frame: number; label: string }[];
+  milestones: Milestone[];
   contributors: { login: string; avatar: string; contributions: number }[];
   langColors: Record<string, string>;
   depth: number;

@@ -29,6 +29,15 @@ describe("milestones", () => {
     expect(labels).toContain("Grows 133%");
     expect(labels.some((l) => l.startsWith("Big clean-up"))).toBe(true);
   });
+
+  it("records what each moment is about, so the history graph can give it a lane", () => {
+    const frames = [frame(1, { "": 60 }), frame(2, { "": 60, src: 10, docs: 5 }, { Go: 10 })];
+    expect(milestones(frames)).toEqual([
+      { frame: 1, label: "src/ appears", kind: "folder", key: "src" },
+      { frame: 1, label: "docs/ appears", kind: "folder", key: "docs" },
+      { frame: 1, label: "First Go code", kind: "language", key: "Go" },
+    ]);
+  });
 });
 
 describe("layout", () => {

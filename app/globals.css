@@ -36,6 +36,7 @@
   --medium-bg: #fff5e8;
   --low-bg: #ebf7ee;
 
+  --tag-ink: #000000;
   --map-folder: rgba(0, 0, 0, 0.022);
   --map-folder-line: rgba(0, 0, 0, 0.07);
   --map-container: #f2f2f5;
@@ -88,6 +89,7 @@
     --medium-bg: rgba(255, 159, 10, 0.14);
     --low-bg: rgba(48, 209, 88, 0.12);
 
+    --tag-ink: #ffffff;
     --map-folder: rgba(255, 255, 255, 0.03);
     --map-folder-line: rgba(255, 255, 255, 0.08);
     --map-container: #2c2c2e;
@@ -129,7 +131,11 @@ body {
 }
 
 main.alt {
-  background: var(--bg-alt);
+  background: var(--bg);
+}
+
+main.alt .card {
+  box-shadow: 0 0 0 1px var(--line-soft), var(--shadow);
 }
 
 a {
@@ -1616,46 +1622,6 @@ main.alt {
   font-variant-numeric: tabular-nums;
 }
 
-.milestones {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: grid;
-  gap: 2px;
-}
-
-.milestones button {
-  width: 100%;
-  text-align: left;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 8px 10px;
-  margin: 0 -10px;
-  border: 0;
-  border-radius: 10px;
-  background: none;
-  color: var(--muted);
-  font: inherit;
-  font-size: 15px;
-  cursor: pointer;
-}
-
-.milestones button.past {
-  color: var(--text);
-}
-
-.milestones button:hover {
-  background: var(--bg-alt);
-  color: var(--text);
-}
-
-.milestones .when {
-  margin-left: auto;
-  font-size: 13px;
-  color: var(--faint);
-}
-
 .people {
   display: flex;
   flex-wrap: wrap;
@@ -1762,4 +1728,128 @@ main.alt {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
+}
+
+/* ---------- graph list (git-graph style rows) ---------- */
+
+.graph {
+  position: relative;
+  margin: 0 -10px;
+}
+
+.graph-lines {
+  position: absolute;
+  left: 10px;
+  top: 0;
+  z-index: 1;
+  pointer-events: none;
+  overflow: visible;
+}
+
+.graph-lines path {
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: graph-draw 0.9s cubic-bezier(0.3, 0.7, 0.2, 1) forwards;
+}
+
+.graph-dot {
+  transform-box: fill-box;
+  transform-origin: center;
+  transform: scale(0);
+  animation: graph-pop 0.35s cubic-bezier(0.3, 1.4, 0.5, 1) forwards;
+}
+
+.graph-dot.root {
+  animation-delay: 0s;
+}
+
+@keyframes graph-draw {
+  to { stroke-dashoffset: 0; }
+}
+
+@keyframes graph-pop {
+  to { transform: scale(1); }
+}
+
+.graph-row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  height: 40px;
+  padding: 0 10px 0 calc(var(--gutter) + 10px);
+  border: 0;
+  border-radius: 10px;
+  background: none;
+  font: inherit;
+  font-size: 15px;
+  color: var(--muted);
+  text-align: left;
+  transition: background 0.15s, color 0.15s;
+}
+
+button.graph-row {
+  cursor: pointer;
+}
+
+.graph-row.lit {
+  color: var(--text);
+  background: color-mix(in srgb, var(--band) 7%, transparent);
+}
+
+button.graph-row:hover,
+.graph-row:hover {
+  background: color-mix(in srgb, var(--band) 12%, transparent);
+  color: var(--text);
+}
+
+.graph-root {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.graph-root:hover {
+  background: none;
+}
+
+.graph-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.graph-tag {
+  flex: none;
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  letter-spacing: 0;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-weight: 500;
+  color: color-mix(in srgb, var(--tag) 78%, var(--tag-ink));
+  background: color-mix(in srgb, var(--tag) 12%, transparent);
+}
+
+.graph-meta {
+  flex: none;
+  margin-left: auto;
+  font-size: 13px;
+  color: var(--faint);
+  font-variant-numeric: tabular-nums;
+}
+
+.graph-mono {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  letter-spacing: 0;
+}
+
+.graph-more {
+  margin-top: 12px;
+  width: 100%;
 }
