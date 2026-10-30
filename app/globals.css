@@ -37,12 +37,13 @@
   --low-bg: #ebf7ee;
 
   --tag-ink: #000000;
+  --graph-trunk: #d2d2d7;
+  --radar-guide: #d2d2d7;
+  --lane-1: #0071e3;
+  --lane-2: #0fa3b1;
+  --lane-3: #7d3cf2;
   --map-folder: rgba(0, 0, 0, 0.022);
   --map-folder-line: rgba(0, 0, 0, 0.07);
-  --map-container: #f2f2f5;
-  --map-container-2: #ffffff;
-  --map-rest: #e5e5ea;
-  --map-label: rgba(29, 29, 31, 0.72);
   --map-edge: #ff9500;
   --map-edge-active: #1d1d1f;
 
@@ -80,7 +81,7 @@
     --removed: #98989d;
     --ripple1: #ff9f0a;
     --ripple2: #ffd60a;
-    --ripple3: #636366;
+    --ripple3: #98989d;
 
     --high: #ff6961;
     --medium: #ffb340;
@@ -90,12 +91,13 @@
     --low-bg: rgba(48, 209, 88, 0.12);
 
     --tag-ink: #ffffff;
+    --graph-trunk: #636366;
+    --radar-guide: #545458;
+    --lane-1: #2997ff;
+    --lane-2: #2ad0dc;
+    --lane-3: #a57bff;
     --map-folder: rgba(255, 255, 255, 0.03);
     --map-folder-line: rgba(255, 255, 255, 0.08);
-    --map-container: #2c2c2e;
-    --map-container-2: #3a3a3c;
-    --map-rest: #545458;
-    --map-label: rgba(245, 245, 247, 0.75);
     --map-edge: #ff9f0a;
     --map-edge-active: #f5f5f7;
 
@@ -1048,23 +1050,8 @@ main.alt {
   margin: 0;
 }
 
-.map-wrap {
-  position: relative;
-  aspect-ratio: 1 / 1;
-  width: 100%;
-}
 
-.map-wrap svg {
-  width: 100%;
-  height: 100%;
-  display: block;
-}
 
-.map-back {
-  position: absolute;
-  left: 8px;
-  top: 8px;
-}
 
 .legend {
   display: flex;
@@ -1784,26 +1771,51 @@ main.alt {
   padding: 0 10px 0 calc(var(--gutter) + 10px);
   border: 0;
   border-radius: 10px;
-  background: none;
+  background-color: transparent;
   font: inherit;
   font-size: 15px;
   color: var(--muted);
   text-align: left;
-  transition: background 0.15s, color 0.15s;
 }
 
 button.graph-row {
   cursor: pointer;
 }
 
+.graph-row {
+  background-image: linear-gradient(color-mix(in srgb, var(--band) 8%, transparent), color-mix(in srgb, var(--band) 8%, transparent));
+  background-repeat: no-repeat;
+  background-size: 0% 100%;
+  transition: background-size 0.5s cubic-bezier(0.3, 0.7, 0.2, 1), background-color 0.15s, color 0.3s;
+}
+
 .graph-row.lit {
   color: var(--text);
-  background: color-mix(in srgb, var(--band) 7%, transparent);
+  background-size: 100% 100%;
+}
+
+.graph-progress {
+  transform-box: fill-box;
+  transform-origin: top;
+  transition: transform 0.5s cubic-bezier(0.3, 0.7, 0.2, 1);
+}
+
+.graph-ping {
+  fill: none;
+  stroke-width: 2;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: graph-ping 0.9s ease-out forwards;
+}
+
+@keyframes graph-ping {
+  from { transform: scale(1); opacity: 0.9; }
+  to { transform: scale(3.2); opacity: 0; }
 }
 
 button.graph-row:hover,
 .graph-row:hover {
-  background: color-mix(in srgb, var(--band) 12%, transparent);
+  background-color: color-mix(in srgb, var(--band) 10%, transparent);
   color: var(--text);
 }
 
@@ -1813,7 +1825,7 @@ button.graph-row:hover,
 }
 
 .graph-root:hover {
-  background: none;
+  background-color: transparent;
 }
 
 .graph-label {
@@ -1964,5 +1976,174 @@ button.graph-row:hover,
 
   .ring-legend {
     padding: 4px 16px;
+  }
+}
+
+/* ---------- blast radar ---------- */
+
+.radar {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+}
+
+.radar svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+  overflow: visible;
+}
+
+.radar-guide {
+  fill: none;
+  stroke: var(--radar-guide);
+  stroke-width: 1.2;
+  stroke-dasharray: 3 7;
+  opacity: 0;
+  animation: radar-fade 0.6s ease-out forwards;
+}
+
+.radar-wave circle {
+  fill: none;
+  stroke: var(--changed);
+  stroke-width: 3;
+  vector-effect: non-scaling-stroke;
+  opacity: 0;
+  transform-box: view-box;
+  transform-origin: 500px 500px;
+  animation: radar-wave 1.6s cubic-bezier(0.2, 0.6, 0.3, 1) forwards;
+}
+
+.radar-wedge {
+  fill: color-mix(in srgb, var(--ripple1) 7%, transparent);
+  pointer-events: none;
+  transition: opacity 0.2s;
+}
+
+/* A wide, invisible stroke over the band, so areas are easy to hover. */
+.radar-hit {
+  fill: none;
+  stroke: transparent;
+  stroke-width: 56;
+  pointer-events: stroke;
+}
+
+.radar-track {
+  fill: none;
+  stroke: var(--fill);
+  stroke-width: 12;
+}
+
+.radar-fill {
+  fill: none;
+  stroke: var(--ripple1);
+  stroke-width: 12;
+  transition: opacity 0.2s;
+}
+
+.radar-sector {
+  cursor: default;
+}
+
+.radar-label {
+  font-size: 17px;
+  font-weight: 500;
+  fill: var(--muted);
+  transition: fill 0.2s;
+}
+
+.radar-label.on {
+  fill: var(--text);
+  font-weight: 600;
+}
+
+.radar-links path {
+  fill: none;
+  stroke: var(--map-edge);
+  stroke-width: 1.4;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  opacity: 0.3;
+  animation: graph-draw 0.9s ease-out forwards;
+  transition: opacity 0.2s;
+}
+
+.radar-links path.on {
+  stroke: var(--changed);
+  stroke-width: 2.6;
+}
+
+.radar-node {
+  stroke-width: 2.5;
+  transform-box: fill-box;
+  transform-origin: center;
+  transform: scale(0);
+  animation: graph-pop 0.4s cubic-bezier(0.3, 1.5, 0.5, 1) forwards;
+  transition: opacity 0.2s, r 0.15s;
+}
+
+.radar-node.removed {
+  stroke-dasharray: 3 3;
+}
+
+.radar-core {
+  cursor: pointer;
+}
+
+.radar-core circle {
+  filter: drop-shadow(0 6px 18px rgba(255, 59, 48, 0.35));
+}
+
+.radar-core text {
+  fill: #ffffff;
+  text-anchor: middle;
+  pointer-events: none;
+}
+
+.radar-core-n {
+  font-size: 40px;
+  font-weight: 700;
+  letter-spacing: -1px;
+}
+
+.radar-core-k {
+  font-size: 15px;
+  font-weight: 500;
+  opacity: 0.9;
+}
+
+.legend-band {
+  display: inline-block;
+  width: 18px;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--ripple1);
+}
+
+@keyframes radar-fade {
+  to { opacity: 1; }
+}
+
+@keyframes radar-wave {
+  0% { transform: scale(1); opacity: 0.55; }
+  100% { transform: scale(7.4); opacity: 0; }
+}
+
+/* Dark mode: lift the graph and radar colours so they hold up on black. */
+@media (prefers-color-scheme: dark) {
+  .graph-lines {
+    filter: brightness(1.25) saturate(1.1);
+  }
+
+  .radar-links path {
+    opacity: 0.45;
+  }
+
+  .radar-track {
+    stroke: #3a3a3c;
+  }
+
+  .radar-node {
+    filter: brightness(1.12);
   }
 }

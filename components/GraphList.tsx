@@ -25,17 +25,20 @@ export interface GraphRow {
 const ROW = 40;
 const GAP = 20;
 const X0 = 12;
-const TRUNK = "var(--line)";
+const TRUNK = "var(--graph-trunk)";
 
 export function GraphList({
   root,
   lanes,
   rows,
+  progress,
 }: {
   root: { label: ReactNode; color: string; meta?: ReactNode };
   /** Colours of lanes 1, 2, 3… */
   lanes: string[];
   rows: GraphRow[];
+  /** When set, a coloured line fills the trunk down to this many rows, like a playhead. */
+  progress?: number;
 }) {
   const used = Math.max(0, ...rows.map((r) => r.lane));
   const gutter = X0 + used * GAP + 16;
@@ -65,6 +68,17 @@ export function GraphList({
             style={{ stroke: color(lane), animationDelay: `${lane * 90}ms` }}
           />
         ))}
+        {progress !== undefined && rows.length > 0 && (
+          <rect
+            className="graph-progress"
+            x={x(0) - 1.5}
+            y={y(0)}
+            width={3}
+            rx={1.5}
+            height={y(rows.length) - y(0)}
+            style={{ fill: root.color, transform: `scaleY(${Math.min(1, progress / rows.length)})` }}
+          />
+        )}
         <circle className="graph-dot root" cx={x(0)} cy={y(0)} r={7} style={{ fill: root.color }} />
         {rows.map((r, i) => (
           <circle
@@ -76,6 +90,20 @@ export function GraphList({
             style={{ fill: r.dot ?? color(r.lane), animationDelay: `${120 + i * 35}ms` }}
           />
         ))}
+        {/* A ring that pings once when a row lights up; it remounts each time. */}
+        {progress !== undefined &&
+          rows.map((r, i) =>
+            r.lit ? (
+              <circle
+                key={`${r.key}-ping`}
+                className="graph-ping"
+                cx={x(r.lane)}
+                cy={y(i + 1)}
+                r={4.5}
+                style={{ stroke: r.dot ?? color(r.lane) }}
+              />
+            ) : null,
+          )}
       </svg>
 
       <div className="graph-row graph-root">
