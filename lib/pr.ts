@@ -4,6 +4,7 @@
 import { api, getRepo, tarball, type RepoMeta } from "./github";
 import { extractImports, indexFiles, isManifest, noteManifest, resolveImports, dir } from "./imports";
 import { extOf, isTest, langOf, SOURCE_EXTS } from "./lang";
+import { areaOf } from "./area";
 import { readTarGz } from "./tar";
 import type { Impacted, Level, MapNode, PRFile, PRReport, Risk, Role } from "./types";
 
@@ -415,16 +416,6 @@ function removesExport(path: string, patch: string): boolean {
   return patch.split("\n").some((line) => !line.startsWith("---") && re.test(line));
 }
 
-/** Groups paths into areas: the top folder, or two levels for monorepo layouts. */
-export function areaOf(path: string): string {
-  const parts = path.split("/");
-  if (parts.length === 1) return "(root)";
-  if (/^(src|packages|apps|libs|lib|internal|pkg|crates|services|modules|components|cmd)$/.test(parts[0]) && parts.length > 2) {
-    return `${parts[0]}/${parts[1]}`;
-  }
-  return parts[0];
-}
-
 function areaCounts(files: PRFile[], impacted: Map<string, Impacted>) {
   const m = new Map<string, { name: string; changed: number; impacted: number }>();
   const bump = (p: string, key: "changed" | "impacted") => {
@@ -565,4 +556,3 @@ function list(items: string[]): string {
   if (items.length <= 1) return items.join("");
   return `${items.slice(0, -1).join(", ")} and ${items[items.length - 1]}`;
 }
-

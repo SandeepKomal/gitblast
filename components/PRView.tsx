@@ -7,7 +7,7 @@ import type { Impacted, Level, PRFile, PRReport } from "@/lib/types";
 import { useApi } from "@/lib/useApi";
 import { CopyLink } from "./CopyLink";
 import { GraphList, type GraphRow } from "./GraphList";
-import { Legend, PackMap } from "./PackMap";
+import { BlastRadar, Legend } from "./BlastRadar";
 import { ErrorState, Loading } from "./States";
 
 const LEVEL_COLOR: Record<Level, string> = { high: "var(--high)", medium: "var(--medium)", low: "var(--low)" };
@@ -115,9 +115,17 @@ function Report({ report }: { report: PRReport }) {
         <div className="card map-card">
           <div className="map-head">
             <h2>Blast radius</h2>
-            <span className="faint" style={{ fontSize: 12 }}>Click a folder to zoom · Esc to zoom out</span>
+            <span className="faint" style={{ fontSize: 12 }}>Hover a file to trace it · click the centre to replay</span>
           </div>
-          <PackMap map={report.map} edges={report.edges} active={active} onActive={setActive} fileUrl={fileUrl} />
+          <BlastRadar
+            files={report.files}
+            impacted={report.impacted}
+            edges={report.edges}
+            map={report.map}
+            active={active}
+            onActive={setActive}
+            fileUrl={fileUrl}
+          />
           <Legend />
         </div>
 
@@ -274,7 +282,7 @@ function ReviewOrder({
 const DEPTH_TEXT = ["", "Imports the changed code directly", "Two steps away", "Three steps away"];
 const DEPTH_COLOR = ["", "var(--ripple1)", "var(--ripple2)", "var(--ripple3)"];
 
-const BRANCH_COLORS = ["#0071e3", "#0fa3b1", "#7d3cf2"];
+const BRANCH_COLORS = ["var(--lane-1)", "var(--lane-2)", "var(--lane-3)"];
 const PER_BRANCH = 4;
 const QUIET_FILES = 4;
 
