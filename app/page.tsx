@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { SiteFooter, SiteHeader } from "@/components/SiteChrome";
+import { LogoMark, Wordmark } from "@/components/Logo";
 import { UrlBox } from "@/components/UrlBox";
 
 const REPO_EXAMPLES = ["facebook/react", "vercel/next.js", "golang/go"];
@@ -11,7 +12,10 @@ export default function Home() {
       <SiteHeader search={false} />
       <main>
         <section className="hero wrap">
-          <div className="eyebrow gradient-text">gitblast</div>
+          <div className="eyebrow">
+            <LogoMark size={40} />
+            <Wordmark />
+          </div>
           <h1>Change one word. See your code differently.</h1>
           <p className="lede">
             Swap github for gitblast in any link. Two tools, no install and no sign-in: the blast radius of a pull
