@@ -9,7 +9,7 @@ import { useApi } from "@/lib/useApi";
 import { CopyLink } from "./CopyLink";
 import { GraphList, type GraphRow } from "./GraphList";
 import { ErrorState, Loading } from "./States";
-import { blend, HERE, layoutFrames, topColors, type Placed } from "./timelapse-layout";
+import { arcs, buildRings, geometry, hitTest, OTHER, ROOT, type RingModel } from "./rings";
 
 const SPEEDS = [0.5, 1, 2, 4];
 const NEUTRAL = "#a1a1a6";
@@ -33,19 +33,23 @@ export function TimelapseView({ owner, repo }: { owner: string; repo: string }) 
 
 function Player({ data }: { data: Timelapse }) {
   const { repo, frames } = data;
-  const layouts = useMemo(() => layoutFrames(frames), [frames]);
-  const colors = useMemo(() => topColors(layouts[layouts.length - 1]), [layouts]);
+  const model = useMemo(() => buildRings(frames), [frames]);
+  const colors = useMemo(() => new Map(model.folders.map((f) => [f.key, f.color])), [model]);
   const last = Math.max(0, frames.length - 1);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const tRef = useRef(0);
   const playingRef = useRef(false);
   const speedRef = useRef(1);
-  const drawnRef = useRef<(Placed & { fresh: number })[]>([]);
+  // The folder to single out: the one under the pointer, else the pinned one.
+  const focusRef = useRef<number | null>(null);
+  const [hovered, setHovered] = useState<number | null>(null);
+  const [pinned, setPinned] = useState<number | null>(null);
+  focusRef.current = hovered ?? pinned;
   const [t, setT] = useState(0);
   const [playing, setPlaying] = useState(false);
   const [speed, setSpeed] = useState(1);
-  const [tip, setTip] = useState<{ x: number; y: number; p: Placed } | null>(null);
+  const [tip, setTip] = useState<{ x: number; y: number; frame: number; folder: number } | null>(null);
 
   const current = frames[Math.min(last, Math.round(t))];
 
@@ -78,15 +82,15 @@ function Player({ data }: { data: Timelapse }) {
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
     // Colours come from the page's theme tokens and follow light and dark mode.
-    const theme = { font: "", line: "", container: "", inner: "", label: "" };
+    const theme = { font: "", surface: "", track: "", text: "", muted: "" };
     const readTheme = () => {
       const css = getComputedStyle(document.documentElement);
       const v = (name: string) => css.getPropertyValue(name).trim();
-      theme.font = v("--font") || "system-ui";
-      theme.line = v("--map-folder-line");
-      theme.container = v("--map-container");
-      theme.inner = v("--map-container-2");
-      theme.label = v("--muted");
+      theme.font = v("--font-display") || "system-ui";
+      theme.surface = v("--surface") || "#ffffff";
+      theme.track = v("--fill") || "#e8e8ed";
+      theme.text = v("--text");
+      theme.muted = v("--muted");
     };
     readTheme();
     const scheme = window.matchMedia("(prefers-color-scheme: dark)");
@@ -120,70 +124,7 @@ function Player({ data }: { data: Timelapse }) {
       }
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       ctx.clearRect(0, 0, w, h);
-
-      const a = Math.floor(tRef.current);
-      const b = Math.min(last, a + 1);
-      const raw = tRef.current - a;
-      const k = raw * raw * (3 - 2 * raw);
-      const nodes = layouts.length ? blend(layouts[a], layouts[b], b === a ? 0 : k) : [];
-      drawnRef.current = nodes;
-
-      const { size, ox, oy } = stageGeometry(w, h);
-
-      // Folders are quiet, nested surfaces; files are glossy spheres in
-      // their top-level folder's colour, lit from the upper left.
-      for (const n of nodes) {
-        const r = n.r * size;
-        if (r < 0.4) continue;
-        const x = ox + n.x * size;
-        const y = oy + n.y * size;
-        const color = colors.get(n.top) ?? NEUTRAL;
-        ctx.beginPath();
-        ctx.arc(x, y, r, 0, Math.PI * 2);
-        if (!n.leaf) {
-          ctx.fillStyle = n.depth % 2 === 1 ? theme.container : theme.inner;
-          ctx.fill();
-          ctx.strokeStyle = theme.line;
-          ctx.lineWidth = 1;
-          ctx.stroke();
-          continue;
-        }
-        const base = n.key.endsWith(HERE) ? mix(color, "#ffffff", 0.45) : color;
-        const g = ctx.createRadialGradient(x - r * 0.35, y - r * 0.4, r * 0.05, x, y, r);
-        g.addColorStop(0, mix(base, "#ffffff", 0.42));
-        g.addColorStop(0.65, base);
-        g.addColorStop(1, mix(base, "#000000", 0.1));
-        ctx.fillStyle = g;
-        if (n.fresh > 0.05) {
-          ctx.shadowColor = withAlpha(color, 0.55);
-          ctx.shadowBlur = 22 * n.fresh;
-        }
-        ctx.fill();
-        ctx.shadowBlur = 0;
-      }
-
-      ctx.textAlign = "center";
-      ctx.textBaseline = "middle";
-      for (const n of nodes) {
-        if (n.depth !== 1) continue;
-        const r = n.r * size;
-        if (r < 28) continue;
-        const label = n.key === HERE ? "Root files" : n.key;
-        const max = Math.floor((r * 1.5) / 7);
-        const text = label.length > max ? `${label.slice(0, Math.max(1, max - 1))}…` : label;
-        const x = ox + n.x * size;
-        if (n.leaf) {
-          ctx.font = `600 12px ${theme.font}`;
-          ctx.fillStyle = "rgba(255,255,255,0.95)";
-          ctx.fillText(text, x, oy + n.y * size);
-        } else {
-          ctx.font = `600 11.5px ${theme.font}`;
-          ctx.fillStyle = theme.label;
-          ctx.fillText(text, x, oy + n.y * size - r + 14);
-        }
-      }
-      ctx.textBaseline = "alphabetic";
-
+      drawRings(ctx, model, geometry(w, h, frames.length), tRef.current, focusRef.current, theme);
       raf = requestAnimationFrame(draw);
     };
     raf = requestAnimationFrame(draw);
@@ -191,7 +132,7 @@ function Player({ data }: { data: Timelapse }) {
       cancelAnimationFrame(raf);
       scheme.removeEventListener("change", readTheme);
     };
-  }, [layouts, colors, last]);
+  }, [model, frames.length, last]);
 
   // Keyboard: space plays or pauses, arrows step.
   useEffect(() => {
@@ -213,20 +154,18 @@ function Player({ data }: { data: Timelapse }) {
     return () => window.removeEventListener("keydown", onKey);
   }, [last]);
 
+  function pointAt(e: React.MouseEvent<HTMLCanvasElement>) {
+    const box = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - box.left;
+    const y = e.clientY - box.top;
+    const shownRings = Math.min(frames.length, Math.floor(tRef.current) + 1);
+    return { x, y, hit: hitTest(model, geometry(box.width, box.height, frames.length), shownRings, x, y) };
+  }
+
   function hover(e: React.MouseEvent<HTMLCanvasElement>) {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const box = canvas.getBoundingClientRect();
-    const px = e.clientX - box.left;
-    const py = e.clientY - box.top;
-    const { size, ox, oy } = stageGeometry(box.width, box.height);
-    let hit: Placed | null = null;
-    for (const n of drawnRef.current) {
-      const dx = ox + n.x * size - px;
-      const dy = oy + n.y * size - py;
-      if (dx * dx + dy * dy <= (n.r * size) ** 2 && (!hit || n.depth >= hit.depth)) hit = n;
-    }
-    setTip(hit ? { x: px, y: py, p: hit } : null);
+    const { x, y, hit } = pointAt(e);
+    setTip(hit ? { x, y, ...hit } : null);
+    setHovered(hit ? hit.folder : null);
   }
 
   const tops = useMemo(() => countFolders(current), [current]);
@@ -269,8 +208,18 @@ function Player({ data }: { data: Timelapse }) {
           <canvas
             ref={canvasRef}
             onMouseMove={hover}
-            onMouseLeave={() => setTip(null)}
-            aria-label={`Animated map of ${repo.repo}'s folders over time`}
+            onMouseLeave={() => {
+              setTip(null);
+              setHovered(null);
+            }}
+            onClick={(e) => {
+              const { hit } = pointAt(e);
+              if (!hit) return;
+              play(false);
+              seek(hit.frame);
+            }}
+            style={{ cursor: tip ? "pointer" : "default" }}
+            aria-label={`Growth rings of ${repo.repo}: one ring per point in its history, split by top-level folder`}
             role="img"
           />
           {current && (
@@ -293,12 +242,15 @@ function Player({ data }: { data: Timelapse }) {
               </div>
             </div>
           )}
-          {tip && (
-            <div className="tooltip" style={{ left: tip.x, top: tip.y }}>
-              <div className="p">{tip.p.key === HERE ? "(files in the root)" : tip.p.key.endsWith(`/${HERE}`) ? `${tip.p.key.slice(0, -2)}/ (files directly here)` : `${tip.p.key}/`}</div>
-              <div className="s">{num(tip.p.files)} files</div>
-            </div>
-          )}
+          {tip && <RingTip model={model} frames={frames} tip={tip} />}
+          <Legend
+            model={model}
+            frame={Math.min(last, Math.round(t))}
+            focus={hovered ?? pinned}
+            pinned={pinned}
+            onHover={setHovered}
+            onPin={(i) => setPinned(pinned === i ? null : i)}
+          />
           <div className="controls">
             <button className="btn btn-ghost btn-icon" onClick={() => play(!playing)} aria-label={playing ? "Pause" : "Play"}>
               {playing ? <PauseIcon /> : <PlayIcon />}
@@ -357,6 +309,171 @@ function Player({ data }: { data: Timelapse }) {
 
       <PullRequests owner={repo.owner} repo={repo.repo} />
     </>
+  );
+}
+
+/** Draws the rings up to position `t`, sweeping the newest ring in like a clock hand. */
+function drawRings(
+  ctx: CanvasRenderingContext2D,
+  model: RingModel,
+  g: ReturnType<typeof geometry>,
+  t: number,
+  focus: number | null,
+  theme: { font: string; surface: string; track: string; text: string; muted: string },
+) {
+  const done = Math.floor(t);
+  const raw = t - done;
+  const sweep = raw * raw * (3 - 2 * raw);
+  // Thin rings need less of a gap, or many of them turn into stripes.
+  const thick = g.band * (model.counts.length > 20 ? 0.9 : 0.78);
+  const TOP = -Math.PI / 2;
+
+  // Faint tracks show where the rings still to come will go.
+  ctx.lineCap = "butt";
+  for (let i = done + 1; i < model.counts.length; i++) {
+    ctx.beginPath();
+    ctx.arc(g.cx, g.cy, g.inner + g.band * (i + 0.5), 0, Math.PI * 2);
+    ctx.strokeStyle = theme.track;
+    ctx.globalAlpha = 0.45;
+    ctx.lineWidth = thick;
+    ctx.stroke();
+  }
+  ctx.globalAlpha = 1;
+
+  const ringCount = Math.min(model.counts.length, done + (sweep > 0 ? 2 : 1));
+  for (let i = 0; i < ringCount; i++) {
+    const r = g.inner + g.band * (i + 0.5);
+    const limit = i <= done ? Infinity : TOP + sweep * Math.PI * 2;
+    // Older rings are paler, so the newest one reads first.
+    const age = done === 0 ? 0 : Math.max(0, (done - i) / done);
+    for (const a of arcs(model.counts[i])) {
+      if (a.start >= limit) break;
+      const color = model.folders[a.folder].color;
+      const faded = focus === null ? mix(color, theme.surface, age * 0.55) : color;
+      ctx.beginPath();
+      ctx.arc(g.cx, g.cy, r, a.start, Math.min(a.end, limit));
+      ctx.strokeStyle = faded;
+      ctx.globalAlpha = focus === null || focus === a.folder ? 1 : 0.13;
+      ctx.lineWidth = thick;
+      ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  // The leading edge of the ring being drawn.
+  if (sweep > 0 && done + 1 < model.counts.length) {
+    const r = g.inner + g.band * (done + 1.5);
+    const angle = TOP + sweep * Math.PI * 2;
+    ctx.beginPath();
+    ctx.arc(g.cx + Math.cos(angle) * r, g.cy + Math.sin(angle) * r, Math.max(3, thick * 0.55), 0, Math.PI * 2);
+    ctx.fillStyle = "#ffffff";
+    ctx.shadowColor = "rgba(0, 113, 227, 0.8)";
+    ctx.shadowBlur = 14;
+    ctx.fill();
+    ctx.shadowBlur = 0;
+  }
+
+  // The count in the middle, like a watch face.
+  const frame = Math.min(model.totals.length - 1, Math.round(t));
+  const files = focus === null ? model.totals[frame] : model.counts[frame][focus];
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillStyle = focus === null ? theme.text : model.folders[focus].color;
+  ctx.font = `700 ${Math.round(g.inner * 0.42)}px ${theme.font}`;
+  ctx.fillText((files ?? 0).toLocaleString("en-US"), g.cx, g.cy - g.inner * 0.08);
+  ctx.fillStyle = theme.muted;
+  ctx.font = `500 ${Math.max(11, Math.round(g.inner * 0.13))}px ${theme.font}`;
+  ctx.fillText(focus === null ? "files" : `files in ${model.folders[focus].label}`, g.cx, g.cy + g.inner * 0.3);
+  ctx.textBaseline = "alphabetic";
+}
+
+function RingTip({
+  model,
+  frames,
+  tip,
+}: {
+  model: RingModel;
+  frames: Frame[];
+  tip: { x: number; y: number; frame: number; folder: number };
+}) {
+  const folder = model.folders[tip.folder];
+  const n = model.counts[tip.frame][tip.folder];
+  const before = tip.frame > 0 ? model.counts[tip.frame - 1][tip.folder] : 0;
+  const share = model.totals[tip.frame] ? Math.round((n / model.totals[tip.frame]) * 100) : 0;
+  const subs: [string, number][] = [];
+  if (folder.key !== ROOT && folder.key !== OTHER) {
+    const m = new Map<string, number>();
+    for (const [dir, c] of Object.entries(frames[tip.frame].dirs)) {
+      const parts = dir.split("/");
+      if (parts[0] !== folder.key || parts.length < 2) continue;
+      m.set(parts[1], (m.get(parts[1]) ?? 0) + c);
+    }
+    subs.push(...[...m.entries()].sort((a, b) => b[1] - a[1]).slice(0, 3));
+  }
+  return (
+    <div className={`tooltip ring-tip${tip.y < 130 ? " below" : ""}`} style={{ left: tip.x, top: tip.y }}>
+      <div className="ring-tip-head">
+        <i className="dot" style={{ background: folder.color }} />
+        <b>{folder.label}</b>
+        <span className="faint">{monthYear(frames[tip.frame].date)}</span>
+      </div>
+      <div className="s">
+        {num(n)} files · {share}% of the repository
+        {tip.frame > 0 && n !== before && (
+          <span className={n > before ? "plus" : "minus"}> · {n > before ? "+" : "−"}{num(Math.abs(n - before))}</span>
+        )}
+      </div>
+      {subs.length > 0 && (
+        <div className="ring-tip-subs">
+          {subs.map(([name, c]) => (
+            <span key={name}>
+              {name}/ <span className="faint">{num(c)}</span>
+            </span>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function Legend({
+  model,
+  frame,
+  focus,
+  pinned,
+  onHover,
+  onPin,
+}: {
+  model: RingModel;
+  frame: number;
+  focus: number | null;
+  pinned: number | null;
+  onHover: (i: number | null) => void;
+  onPin: (i: number) => void;
+}) {
+  return (
+    <div className="ring-legend" onMouseLeave={() => onHover(null)}>
+      {model.folders.map((f, i) => {
+        const n = model.counts[frame][i];
+        const before = frame > 0 ? model.counts[frame - 1][i] : n;
+        return (
+          <button
+            key={f.key}
+            type="button"
+            className={`ring-chip${focus === i ? " on" : ""}${focus !== null && focus !== i ? " dim" : ""}`}
+            style={{ ["--chip" as string]: f.color }}
+            onMouseEnter={() => onHover(i)}
+            onClick={() => onPin(i)}
+            aria-pressed={pinned === i}
+          >
+            <i className="dot" style={{ background: f.color }} />
+            <span className="ring-chip-name">{f.label}</span>
+            <span className="ring-chip-n">{num(n)}</span>
+            {n > before && <span className="plus ring-chip-d">+{num(n - before)}</span>}
+          </button>
+        );
+      })}
+    </div>
   );
 }
 
@@ -540,12 +657,6 @@ function PullRequests({ owner, repo }: { owner: string; repo: string }) {
   );
 }
 
-/** Where the unit-square layout sits on the canvas, leaving room for the caption. */
-function stageGeometry(w: number, h: number) {
-  const size = Math.min(w, h) * 0.86;
-  return { size, ox: (w - size) / 2, oy: (h - size) / 2 + h * 0.05 };
-}
-
 function countFolders(f: Frame | undefined): number {
   if (!f) return 0;
   return new Set(Object.keys(f.dirs).map((d) => d.split("/")[0]).filter(Boolean)).size;
@@ -554,11 +665,6 @@ function countFolders(f: Frame | undefined): number {
 function rgb(hex: string): [number, number, number] {
   const v = parseInt(hex.slice(1), 16);
   return [(v >> 16) & 255, (v >> 8) & 255, v & 255];
-}
-
-function withAlpha(hex: string, a: number): string {
-  const [r, g, b] = rgb(hex);
-  return `rgba(${r},${g},${b},${a})`;
 }
 
 /** Blends `hex` towards `target` by `t` (0–1), returning a hex colour. */
