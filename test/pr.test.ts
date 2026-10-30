@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { extractImports } from "@/lib/imports";
-import { areaOf, buildReport, roleOf, type SourceScan } from "@/lib/pr";
+import { areaOf } from "@/lib/area";
+import { buildReport, roleOf, type SourceScan } from "@/lib/pr";
 
 type Args = Parameters<typeof buildReport>;
 

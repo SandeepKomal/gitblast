@@ -82,7 +82,7 @@ function Player({ data }: { data: Timelapse }) {
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
     // Colours come from the page's theme tokens and follow light and dark mode.
-    const theme = { font: "", surface: "", track: "", text: "", muted: "" };
+    const theme = { font: "", surface: "", track: "", text: "", muted: "", dark: false };
     const readTheme = () => {
       const css = getComputedStyle(document.documentElement);
       const v = (name: string) => css.getPropertyValue(name).trim();
@@ -91,6 +91,7 @@ function Player({ data }: { data: Timelapse }) {
       theme.track = v("--fill") || "#e8e8ed";
       theme.text = v("--text");
       theme.muted = v("--muted");
+      theme.dark = window.matchMedia("(prefers-color-scheme: dark)").matches;
     };
     readTheme();
     const scheme = window.matchMedia("(prefers-color-scheme: dark)");
@@ -319,7 +320,7 @@ function drawRings(
   g: ReturnType<typeof geometry>,
   t: number,
   focus: number | null,
-  theme: { font: string; surface: string; track: string; text: string; muted: string },
+  theme: { font: string; surface: string; track: string; text: string; muted: string; dark: boolean },
 ) {
   const done = Math.floor(t);
   const raw = t - done;
@@ -334,7 +335,7 @@ function drawRings(
     ctx.beginPath();
     ctx.arc(g.cx, g.cy, g.inner + g.band * (i + 0.5), 0, Math.PI * 2);
     ctx.strokeStyle = theme.track;
-    ctx.globalAlpha = 0.45;
+    ctx.globalAlpha = theme.dark ? 0.9 : 0.45;
     ctx.lineWidth = thick;
     ctx.stroke();
   }
@@ -348,12 +349,15 @@ function drawRings(
     const age = done === 0 ? 0 : Math.max(0, (done - i) / done);
     for (const a of arcs(model.counts[i])) {
       if (a.start >= limit) break;
-      const color = model.folders[a.folder].color;
-      const faded = focus === null ? mix(color, theme.surface, age * 0.55) : color;
+      // On a dark background, lift each colour a little and fade old rings
+      // less, or they sink into the page.
+      const base = model.folders[a.folder].color;
+      const color = theme.dark ? mix(base, "#ffffff", 0.18) : base;
+      const faded = focus === null ? mix(color, theme.surface, age * (theme.dark ? 0.32 : 0.55)) : color;
       ctx.beginPath();
       ctx.arc(g.cx, g.cy, r, a.start, Math.min(a.end, limit));
       ctx.strokeStyle = faded;
-      ctx.globalAlpha = focus === null || focus === a.folder ? 1 : 0.13;
+      ctx.globalAlpha = focus === null || focus === a.folder ? 1 : theme.dark ? 0.22 : 0.13;
       ctx.lineWidth = thick;
       ctx.stroke();
     }
@@ -532,6 +536,7 @@ function History({
         root={{ label: "First commit", color: "#34c759", meta: monthYear(frames[0]?.date ?? "") }}
         lanes={lanes}
         rows={rows}
+        progress={rows.filter((r) => r.lit).length}
       />
     </div>
   );
