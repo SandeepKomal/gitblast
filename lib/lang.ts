@@ -1,7 +1,7 @@
 // Language detection by file name, with colours close to the ones developers
 // already associate with each language. Shared by the server and the browser.
 
-export interface Lang {
+interface Lang {
   name: string;
   color: string;
 }

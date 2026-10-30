@@ -3,7 +3,7 @@
 
 const MONOREPO_ROOTS = /^(src|packages|apps|libs|lib|internal|pkg|crates|services|modules|components|cmd)$/;
 
-export const ROOT_AREA = "(root)";
+const ROOT_AREA = "(root)";
 
 export function areaOf(path: string): string {
   const parts = path.split("/");

@@ -15,11 +15,7 @@ const meta: Args[0] = {
   forks: 0,
   language: "TypeScript",
   createdAt: "2020-01-01T00:00:00Z",
-  pushedAt: "2024-01-01T00:00:00Z",
-  sizeKb: 10,
   license: "MIT",
-  archived: false,
-  fork: false,
   ownerAvatar: "",
 };
 
@@ -33,7 +29,6 @@ const pull: Args[1] = {
   base: { ref: "main", sha: "b" },
   head: { ref: "feat", sha: "h", repo: null },
   created_at: "2024-01-01T00:00:00Z",
-  html_url: "https://github.com/acme/shop/pull/7",
   additions: 30,
   deletions: 12,
   commits: 2,
@@ -91,17 +86,11 @@ describe("buildReport", () => {
     expect(report.files.map((f) => f.path)).toEqual(["src/auth/session.ts", "src/legacy.ts", "README.md"]);
   });
 
-  it("draws every highlighted file on the map", () => {
-    const states = new Map<string, string | undefined>();
-    const walk = (n: typeof report.map) => {
-      if (n.state) states.set(n.path, n.state);
-      n.children?.forEach(walk);
-    };
-    walk(report.map);
-    expect(states.get("src/auth/session.ts")).toBe("changed");
-    expect(states.get("src/legacy.ts")).toBe("removed");
-    expect(states.get("src/api.ts")).toBe("ripple1");
+  it("counts every file per area and keeps the import lines between shown files", () => {
+    expect(report.areaTotals).toEqual({ src: 6, "src/auth": 1, "(root)": 1 });
     expect(report.edges).toContainEqual(["src/api.ts", "src/auth/session.ts"]);
+    expect(report.edges).toContainEqual(["src/page.tsx", "src/api.ts"]);
+    expect(report.edges.every(([from]) => report.impacted.some((i) => i.path === from))).toBe(true);
   });
 
   it("explains itself in plain sentences", () => {

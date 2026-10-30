@@ -206,23 +206,6 @@ function Player({ data }: { data: Timelapse }) {
 
       <section className="tl-grid">
         <div className="card stage">
-          <canvas
-            ref={canvasRef}
-            onMouseMove={hover}
-            onMouseLeave={() => {
-              setTip(null);
-              setHovered(null);
-            }}
-            onClick={(e) => {
-              const { hit } = pointAt(e);
-              if (!hit) return;
-              play(false);
-              seek(hit.frame);
-            }}
-            style={{ cursor: tip ? "pointer" : "default" }}
-            aria-label={`Growth rings of ${repo.repo}: one ring per point in its history, split by top-level folder`}
-            role="img"
-          />
           {current && (
             <div className="stage-caption">
               <div>
@@ -243,6 +226,23 @@ function Player({ data }: { data: Timelapse }) {
               </div>
             </div>
           )}
+          <canvas
+            ref={canvasRef}
+            onMouseMove={hover}
+            onMouseLeave={() => {
+              setTip(null);
+              setHovered(null);
+            }}
+            onClick={(e) => {
+              const { hit } = pointAt(e);
+              if (!hit) return;
+              play(false);
+              seek(hit.frame);
+            }}
+            style={{ cursor: tip ? "pointer" : "default" }}
+            aria-label={`Growth rings of ${repo.repo}: one ring per point in its history, split by top-level folder`}
+            role="img"
+          />
           {tip && <RingTip model={model} frames={frames} tip={tip} />}
           <Legend
             model={model}
@@ -384,7 +384,7 @@ function drawRings(
   ctx.textBaseline = "middle";
   ctx.fillStyle = focus === null ? theme.text : model.folders[focus].color;
   ctx.font = `700 ${Math.round(g.inner * 0.42)}px ${theme.font}`;
-  ctx.fillText((files ?? 0).toLocaleString("en-US"), g.cx, g.cy - g.inner * 0.08);
+  ctx.fillText(num(files ?? 0), g.cx, g.cy - g.inner * 0.08);
   ctx.fillStyle = theme.muted;
   ctx.font = `500 ${Math.max(11, Math.round(g.inner * 0.13))}px ${theme.font}`;
   ctx.fillText(focus === null ? "files" : `files in ${model.folders[focus].label}`, g.cx, g.cy + g.inner * 0.3);

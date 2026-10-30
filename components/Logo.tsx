@@ -1,7 +1,7 @@
 // The gitblast mark: growth rings in the site's folder colours (the
 // time-lapse) around an orange blast core (the pull request radar).
 
-export const MARK_PATHS = {
+const MARK_PATHS = {
   outer: [
     { d: "M32 6A26 26 0 0 1 51.92 48.71", color: "#0071e3" },
     { d: "M45.78 54.05A26 26 0 0 1 7.57 40.89", color: "#7d3cf2" },

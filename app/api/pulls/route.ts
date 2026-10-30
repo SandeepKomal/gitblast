@@ -6,7 +6,7 @@ import type { PullSummary } from "@/lib/types";
 
 export const runtime = "nodejs";
 
-const cache = new TTLCache<PullSummary[]>(300);
+const cache = new TTLCache<PullSummary[]>(200);
 
 interface RawPull {
   number: number;

@@ -28,9 +28,8 @@ interface RawContributor {
   type: string;
 }
 
-/** Folders deeper than this are folded into their parent, to keep frames small. */
-const DEPTHS = [3, 2, 1];
-const MAX_KEYS = 900;
+/** Folders are counted two levels deep: top-level areas and the folders inside them. */
+const DEPTH = 2;
 
 export async function analyzeTimelapse(owner: string, repo: string): Promise<Timelapse> {
   const meta = await getRepo(owner, repo);
@@ -77,7 +76,6 @@ export async function analyzeTimelapse(owner: string, repo: string): Promise<Tim
     }
   });
 
-  const depth = pickDepth(latestTree.data);
   const frames: Frame[] = [];
   const langColors: Record<string, string> = {};
   for (let i = 0; i < commits.length; i++) {
@@ -88,7 +86,7 @@ export async function analyzeTimelapse(owner: string, repo: string): Promise<Tim
       continue;
     }
     if (t.truncated) partial = true;
-    frames.push(toFrame(c, t, total - unique[i] + 1, depth, langColors));
+    frames.push(toFrame(c, t, total - unique[i] + 1, langColors));
   }
   frames.sort((a, b) => a.index - b.index);
 
@@ -121,30 +119,17 @@ export async function analyzeTimelapse(owner: string, repo: string): Promise<Tim
     milestones: milestones(frames),
     contributors,
     langColors,
-    depth,
     partial,
     generatedAt: new Date().toISOString(),
   };
 }
 
-function pickDepth(tree: RawTree): number {
-  for (const d of DEPTHS) {
-    const keys = new Set<string>();
-    for (const e of tree.tree) if (e.type === "blob") keys.add(folderKey(e.path, d));
-    if (keys.size <= MAX_KEYS) return d;
-  }
-  return 1;
+/** The folder a file is counted under: its directory cut to two levels, or "" for the root. */
+export function folderKey(path: string): string {
+  return path.split("/").slice(0, -1).slice(0, DEPTH).join("/");
 }
 
-/** The folder a file is counted under: its directory cut to `depth` levels. */
-export function folderKey(path: string, depth: number): string {
-  const parts = path.split("/");
-  parts.pop();
-  if (parts.length === 0) return "";
-  return parts.slice(0, depth).join("/");
-}
-
-function toFrame(c: RawCommit, t: RawTree, index: number, depth: number, colors: Record<string, string>): Frame {
+function toFrame(c: RawCommit, t: RawTree, index: number, colors: Record<string, string>): Frame {
   const dirs: Record<string, number> = {};
   const langs: Record<string, number> = {};
   let files = 0;
@@ -153,7 +138,7 @@ function toFrame(c: RawCommit, t: RawTree, index: number, depth: number, colors:
     if (e.type !== "blob") continue;
     files++;
     bytes += e.size ?? 0;
-    const key = folderKey(e.path, depth);
+    const key = folderKey(e.path);
     dirs[key] = (dirs[key] ?? 0) + 1;
     const lang = langOf(e.path);
     langs[lang.name] = (langs[lang.name] ?? 0) + 1;

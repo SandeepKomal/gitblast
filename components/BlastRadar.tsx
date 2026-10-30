@@ -2,10 +2,10 @@
 
 import { useMemo, useRef, useState, type MouseEvent } from "react";
 import { num } from "@/lib/format";
-import type { Impacted, MapNode, PRFile } from "@/lib/types";
+import type { Impacted, PRFile } from "@/lib/types";
 import { arcPath, BAND, buildRadar, CENTER, CORE, LABEL, polar, RINGS, SIZE, trace, type RadarNode, type RadarSector, type State } from "./radar";
 
-export const STATE_COLOR: Record<State, string> = {
+const STATE_COLOR: Record<State, string> = {
   changed: "var(--changed)",
   added: "var(--added)",
   removed: "var(--removed)",
@@ -29,7 +29,7 @@ export function BlastRadar({
   files,
   impacted,
   edges,
-  map,
+  totals,
   active,
   onActive,
   fileUrl,
@@ -37,12 +37,12 @@ export function BlastRadar({
   files: PRFile[];
   impacted: Impacted[];
   edges: [string, string][];
-  map: MapNode;
+  totals: Record<string, number>;
   active: string | null;
   onActive: (path: string | null) => void;
   fileUrl: (path: string) => string;
 }) {
-  const radar = useMemo(() => buildRadar(files, impacted, edges, map), [files, impacted, edges, map]);
+  const radar = useMemo(() => buildRadar(files, impacted, edges, totals), [files, impacted, edges, totals]);
   const wrapRef = useRef<HTMLDivElement>(null);
   const [tip, setTip] = useState<Tip | null>(null);
   const [area, setArea] = useState<string | null>(null);
