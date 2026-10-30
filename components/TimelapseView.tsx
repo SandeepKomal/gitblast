@@ -422,7 +422,7 @@ function RingTip({
         <span className="faint">{monthYear(frames[tip.frame].date)}</span>
       </div>
       <div className="s">
-        {num(n)} files · {share}% of the repository
+        {num(n)} file{n === 1 ? "" : "s"} · {share}% of the repository
         {tip.frame > 0 && n !== before && (
           <span className={n > before ? "plus" : "minus"}> · {n > before ? "+" : "−"}{num(Math.abs(n - before))}</span>
         )}
