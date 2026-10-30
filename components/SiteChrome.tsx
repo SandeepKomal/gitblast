@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { SITE } from "@/lib/site";
-import { LogoMark } from "./Logo";
+import { LogoMark, Wordmark } from "./Logo";
 import { UrlBox } from "./UrlBox";
 
 export function SiteHeader({ search = true }: { search?: boolean }) {
@@ -9,7 +9,7 @@ export function SiteHeader({ search = true }: { search?: boolean }) {
       <div className="wrap">
         <Link href="/" className="logo" aria-label="gitblast home">
           <LogoMark />
-          <span>gitblast</span>
+          <Wordmark />
         </Link>
         {search && (
           <div className="header-search">

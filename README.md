@@ -1,4 +1,9 @@
-<p align="center"><img src="docs/images/logo.svg" width="96" height="96" alt="gitblast logo"></p>
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/images/wordmark-dark.png">
+    <img src="docs/images/wordmark-light.png" width="348" alt="gitblast">
+  </picture>
+</p>
 
 # gitblast
 
