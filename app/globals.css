@@ -1853,3 +1853,116 @@ button.graph-row:hover,
   margin-top: 12px;
   width: 100%;
 }
+
+/* ---------- growth rings ---------- */
+
+.stage canvas {
+  aspect-ratio: 16 / 10;
+}
+
+.ring-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 4px 22px 4px;
+}
+
+.ring-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 12px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--bg-alt);
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.2s, opacity 0.2s, box-shadow 0.2s;
+}
+
+@media (prefers-color-scheme: dark) {
+  .ring-chip {
+    background: var(--fill);
+  }
+}
+
+.ring-chip.on {
+  background: color-mix(in srgb, var(--chip) 14%, transparent);
+  box-shadow: inset 0 0 0 1.5px var(--chip);
+}
+
+.ring-chip.dim {
+  opacity: 0.45;
+}
+
+.ring-chip-name {
+  font-weight: 500;
+}
+
+.ring-chip-n {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.ring-chip-d {
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.ring-tip {
+  white-space: normal;
+  min-width: 220px;
+}
+
+.ring-tip-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 2px;
+}
+
+.ring-tip-head .faint {
+  margin-left: auto;
+  font-size: 12px;
+}
+
+.ring-tip-subs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  margin-top: 6px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
+.stage {
+  display: flex;
+  flex-direction: column;
+}
+
+.stage .stage-caption {
+  position: static;
+  order: -1;
+  padding: 24px 26px 0;
+  pointer-events: auto;
+}
+
+.tooltip.below {
+  transform: translate(-50%, 18px);
+}
+
+@media (max-width: 640px) {
+  .stage canvas {
+    aspect-ratio: 1 / 1;
+  }
+
+  .stage .stage-caption {
+    padding: 18px 18px 0;
+  }
+
+  .ring-legend {
+    padding: 4px 16px;
+  }
+}
