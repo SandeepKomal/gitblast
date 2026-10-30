@@ -2147,3 +2147,28 @@ button.graph-row:hover,
     filter: brightness(1.12);
   }
 }
+
+/* Signals flowing along the graph, and the breathing "now" dot. */
+.graph-pulse {
+  opacity: 0;
+  filter: drop-shadow(0 0 4px currentColor);
+}
+
+.graph-now {
+  fill: none;
+  stroke-width: 2;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: graph-breathe 1.8s ease-in-out infinite;
+}
+
+@keyframes graph-breathe {
+  0%, 100% { transform: scale(1.1); opacity: 0.9; }
+  50% { transform: scale(2.3); opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .graph-pulse {
+    display: none;
+  }
+}
