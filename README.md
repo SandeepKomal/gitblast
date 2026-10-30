@@ -1,3 +1,5 @@
+<p align="center"><img src="docs/images/logo.svg" width="96" height="96" alt="gitblast logo"></p>
+
 # gitblast
 
 **Change one word in any GitHub link and see your code differently.**
