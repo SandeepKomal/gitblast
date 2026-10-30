@@ -7,7 +7,7 @@ import type { Timelapse } from "@/lib/types";
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
-const cache = new TTLCache<Timelapse>(100);
+const cache = new TTLCache<Timelapse>(50);
 
 export async function GET(req: Request) {
   const q = new URL(req.url).searchParams;

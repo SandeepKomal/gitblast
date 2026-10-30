@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { ago, num } from "@/lib/format";
+import { ago, num, plural } from "@/lib/format";
 import type { Impacted, Level, PRFile, PRReport } from "@/lib/types";
 import { useApi } from "@/lib/useApi";
 import { CopyLink } from "./CopyLink";
@@ -68,7 +68,7 @@ function Report({ report }: { report: PRReport }) {
           <span>{ago(pr.createdAt)}</span>
           <span className="head-actions">
             <CopyLink />
-            <a className="btn btn-primary btn-sm" href={pr.url} target="_blank" rel="noopener noreferrer">
+            <a className="btn btn-primary btn-sm" href={`https://github.com/${repo.owner}/${repo.repo}/pull/${pr.number}`} target="_blank" rel="noopener noreferrer">
               Open on GitHub ↗
             </a>
           </span>
@@ -121,7 +121,7 @@ function Report({ report }: { report: PRReport }) {
             files={report.files}
             impacted={report.impacted}
             edges={report.edges}
-            map={report.map}
+            totals={report.areaTotals}
             active={active}
             onActive={setActive}
             fileUrl={fileUrl}
@@ -390,10 +390,6 @@ function Ripple({
       )}
     </div>
   );
-}
-
-function plural(n: number, word: string) {
-  return `${num(n)} ${word}${n === 1 ? "" : "s"}`;
 }
 
 function Tests({ tests }: { tests: PRReport["tests"] }) {

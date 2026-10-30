@@ -3,7 +3,7 @@
 
 import { validOwner, validRepo } from "./route";
 
-export type ErrorCode = "not_found" | "rate_limited" | "unavailable" | "too_large" | "upstream";
+type ErrorCode = "not_found" | "rate_limited" | "unavailable" | "too_large" | "upstream";
 
 export class GitHubError extends Error {
   constructor(
@@ -79,11 +79,7 @@ export interface RepoMeta {
   forks: number;
   language: string | null;
   createdAt: string;
-  pushedAt: string;
-  sizeKb: number;
   license: string | null;
-  archived: boolean;
-  fork: boolean;
   ownerAvatar: string;
 }
 
@@ -98,16 +94,12 @@ interface RawRepo {
   forks_count: number;
   language: string | null;
   created_at: string;
-  pushed_at: string;
-  size: number;
   license: { spdx_id: string | null } | null;
-  archived: boolean;
-  fork: boolean;
   topics?: string[];
   owner: { login: string; avatar_url: string };
 }
 
-export function blocked(owner: string, repo: string): boolean {
+function blocked(owner: string, repo: string): boolean {
   const list = (process.env.GITBLAST_BLOCKLIST ?? "")
     .split(",")
     .map((s) => s.trim().toLowerCase())
@@ -142,11 +134,7 @@ export async function getRepo(owner: string, repo: string): Promise<RepoMeta> {
     forks: r.forks_count,
     language: r.language,
     createdAt: r.created_at,
-    pushedAt: r.pushed_at,
-    sizeKb: r.size,
     license: r.license?.spdx_id && r.license.spdx_id !== "NOASSERTION" ? r.license.spdx_id : null,
-    archived: r.archived,
-    fork: r.fork,
     ownerAvatar: r.owner.avatar_url,
   };
 }

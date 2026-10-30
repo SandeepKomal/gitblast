@@ -9,10 +9,10 @@ function frame(index: number, dirs: Record<string, number>, langs: Record<string
 }
 
 describe("folderKey", () => {
-  it("cuts directories to a depth", () => {
-    expect(folderKey("README.md", 2)).toBe("");
-    expect(folderKey("a/b/c/d.ts", 2)).toBe("a/b");
-    expect(folderKey("a/d.ts", 3)).toBe("a");
+  it("cuts directories to two levels", () => {
+    expect(folderKey("README.md")).toBe("");
+    expect(folderKey("a/b/c/d.ts")).toBe("a/b");
+    expect(folderKey("a/d.ts")).toBe("a");
   });
 });
 

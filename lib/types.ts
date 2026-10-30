@@ -1,22 +1,10 @@
 // The JSON the API returns and the pages render. Shared by server and browser.
 
-export type FileStatus = "added" | "modified" | "removed" | "renamed";
+type FileStatus = "added" | "modified" | "removed" | "renamed";
 export type Role = "source" | "test" | "config" | "deps" | "ci" | "docs" | "data" | "asset";
 export type Level = "high" | "medium" | "low";
 
-/** A node of the circle map. Leaves carry a value; `state` marks PR involvement. */
-export interface MapNode {
-  name: string;
-  path: string;
-  value?: number;
-  /** Number of files this leaf stands for (a folder leaf stands for many). */
-  files?: number;
-  state?: "changed" | "added" | "removed" | "ripple1" | "ripple2" | "ripple3";
-  color?: string;
-  children?: MapNode[];
-}
-
-export interface RepoSummary {
+interface RepoSummary {
   owner: string;
   repo: string;
   description: string | null;
@@ -68,7 +56,6 @@ export interface PRReport {
     head: string;
     headSha: string;
     createdAt: string;
-    url: string;
     additions: number;
     deletions: number;
     commits: number;
@@ -83,7 +70,8 @@ export interface PRReport {
   tests: { changed: string[]; affected: string[] };
   risks: Risk[];
   areas: { name: string; changed: number; impacted: number }[];
-  map: MapNode;
+  /** Files per area across the whole repository, affected or not. */
+  areaTotals: Record<string, number>;
   edges: [string, string][];
   analysis: { complete: boolean; filesScanned: number; note?: string };
   generatedAt: string;
@@ -99,7 +87,7 @@ export interface Frame {
   index: number;
   files: number;
   bytes: number;
-  /** Folder (to a fixed depth) → number of files in it and below. */
+  /** Folder, two levels deep → number of files in it and below. */
   dirs: Record<string, number>;
   /** Language name → number of files. */
   langs: Record<string, number>;
@@ -126,7 +114,6 @@ export interface Timelapse {
   milestones: Milestone[];
   contributors: { login: string; avatar: string; contributions: number }[];
   langColors: Record<string, string>;
-  depth: number;
   partial: boolean;
   generatedAt: string;
 }

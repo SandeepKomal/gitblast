@@ -2,6 +2,10 @@ export function num(n: number): string {
   return n.toLocaleString("en-US");
 }
 
+export function plural(n: number, word: string): string {
+  return `${num(n)} ${word}${n === 1 ? "" : "s"}`;
+}
+
 export function compact(n: number): string {
   return new Intl.NumberFormat("en-US", { notation: "compact", maximumFractionDigits: 1 }).format(n);
 }

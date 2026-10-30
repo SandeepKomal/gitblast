@@ -5,7 +5,7 @@
 import { Readable } from "node:stream";
 import { createGunzip } from "node:zlib";
 
-export interface TarLimits {
+interface TarLimits {
   /** Bytes downloaded before giving up. */
   maxCompressed: number;
   /** Bytes after decompression before giving up (zip-bomb guard). */
@@ -22,7 +22,7 @@ export interface TarFile {
   content?: Buffer;
 }
 
-export class TarParser {
+class TarParser {
   private chunks: Buffer[] = [];
   private queued = 0;
   private state: "header" | "data" | "pad" | "done" = "header";

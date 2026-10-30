@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import type { ApiError } from "./types";
 
-export type ApiState<T> =
+type ApiState<T> =
   | { status: "loading"; elapsed: number }
   | { status: "error"; error: ApiError["error"] }
   | { status: "ready"; data: T };

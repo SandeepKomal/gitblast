@@ -2,8 +2,8 @@
 // ring, each ring outwards one more import away, and the circle cut into
 // slices by area so a reader can see where the change spreads.
 
-import { areaOf, ROOT_AREA } from "@/lib/area";
-import type { Impacted, MapNode, PRFile } from "@/lib/types";
+import { areaOf } from "@/lib/area";
+import type { Impacted, PRFile } from "@/lib/types";
 
 export const SIZE = 1000;
 export const CENTER = SIZE / 2;
@@ -17,7 +17,7 @@ const GAP = 0.05;
 const MAX_CHANGED = 120;
 const TOP = -Math.PI / 2;
 
-export type State = NonNullable<MapNode["state"]>;
+export type State = "changed" | "added" | "removed" | "ripple1" | "ripple2" | "ripple3";
 
 export interface RadarNode {
   path: string;
@@ -42,13 +42,13 @@ export interface RadarSector {
   total: number;
 }
 
-export interface RadarLink {
+interface RadarLink {
   from: string;
   to: string;
   d: string;
 }
 
-export interface Radar {
+interface Radar {
   nodes: RadarNode[];
   sectors: RadarSector[];
   links: RadarLink[];
@@ -66,27 +66,7 @@ export function arcPath(r: number, a: number, b: number): string {
   return `M ${x1} ${y1} A ${r} ${r} 0 ${b - a > Math.PI ? 1 : 0} 1 ${x2} ${y2}`;
 }
 
-/** Files per area across the whole repository, read off the map the server sent. */
-export function areaTotals(map: MapNode): Map<string, number> {
-  const totals = new Map<string, number>();
-  const visit = (n: MapNode) => {
-    if (n.children) {
-      n.children.forEach(visit);
-      return;
-    }
-    let area: string;
-    if (n.state) area = areaOf(n.path);
-    else if (n.path.endsWith("/…")) {
-      const dir = n.path.slice(0, -2).replace(/^\//, "");
-      area = dir ? areaOf(`${dir}/f`) : ROOT_AREA;
-    } else area = areaOf(`${n.path}/f`);
-    totals.set(area, (totals.get(area) ?? 0) + (n.files ?? 0));
-  };
-  visit(map);
-  return totals;
-}
-
-export function buildRadar(files: PRFile[], impacted: Impacted[], edges: [string, string][], map: MapNode): Radar {
+export function buildRadar(files: PRFile[], impacted: Impacted[], edges: [string, string][], totals: Record<string, number>): Radar {
   type Seed = Omit<RadarNode, "x" | "y" | "r" | "order">;
   const changed: Seed[] = [...files]
     .sort((a, b) => b.reach - a.reach || b.additions + b.deletions - (a.additions + a.deletions))
@@ -114,7 +94,6 @@ export function buildRadar(files: PRFile[], impacted: Impacted[], edges: [string
   const weights = areas.map(([, list]) => Math.sqrt(list.length) + 1);
   const totalWeight = weights.reduce((a, b) => a + b, 0) || 1;
   const usable = Math.PI * 2 - GAP * areas.length;
-  const totals = areaTotals(map);
 
   const sectors: RadarSector[] = [];
   const nodes: RadarNode[] = [];
@@ -127,7 +106,7 @@ export function buildRadar(files: PRFile[], impacted: Impacted[], edges: [string
       end: at + span,
       changed: list.filter((s) => s.depth === 0).length,
       impacted: list.filter((s) => s.depth > 0).length,
-      total: Math.max(totals.get(area) ?? 0, list.length),
+      total: Math.max(totals[area] ?? 0, list.length),
     };
     sectors.push(sector);
     for (const depth of [0, 1, 2, 3] as const) {

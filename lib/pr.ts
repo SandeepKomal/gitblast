@@ -2,11 +2,12 @@
 // imports the changed code, which tests cover it and what deserves a closer look.
 
 import { api, getRepo, tarball, type RepoMeta } from "./github";
-import { extractImports, indexFiles, isManifest, noteManifest, resolveImports, dir } from "./imports";
+import { extractImports, indexFiles, isManifest, noteManifest, resolveImports } from "./imports";
 import { extOf, isTest, langOf, SOURCE_EXTS } from "./lang";
 import { areaOf } from "./area";
+import { num, plural } from "./format";
 import { readTarGz } from "./tar";
-import type { Impacted, Level, MapNode, PRFile, PRReport, Risk, Role } from "./types";
+import type { Impacted, Level, PRFile, PRReport, Risk, Role } from "./types";
 
 interface RawPull {
   number: number;
@@ -18,7 +19,6 @@ interface RawPull {
   base: { ref: string; sha: string };
   head: { ref: string; sha: string; repo: { full_name: string } | null };
   created_at: string;
-  html_url: string;
   additions: number;
   deletions: number;
   commits: number;
@@ -38,7 +38,7 @@ const MAX_FILE_PAGES = 30; // GitHub lists at most 3,000 files per pull request.
 const MAX_SOURCE_BYTES = 768 * 1024;
 const MAX_DEPTH = 3;
 const MAX_IMPACTED = 2000;
-const MAX_MAP_FILES = 600;
+const MAX_SHOWN = 400;
 const MAX_EDGES = 900;
 
 export async function analyzePR(owner: string, repo: string, number: number): Promise<PRReport> {
@@ -90,7 +90,7 @@ async function scanSource(meta: RepoMeta, pull: RawPull, files: RawFile[]): Prom
     },
   );
   scan.complete = !truncated;
-  // Files the PR touches always belong in the map, even past a size limit.
+  // Files the PR touches always count, even past a size limit.
   if (truncated) {
     const seen = new Set(scan.paths);
     for (const f of files) if (f.status !== "removed" && !seen.has(f.filename)) scan.paths.push(f.filename);
@@ -163,12 +163,20 @@ export function buildReport(meta: RepoMeta, pull: RawPull, rawFiles: RawFile[], 
   const level: Level = score >= 50 ? "high" : score >= 20 ? "medium" : "low";
 
   const areas = areaCounts(files, impacted);
-  const impactedList = [...impacted.values()].sort((a, b) => a.depth - b.depth || a.path.localeCompare(b.path));
-  const { map, edges } = buildMap(scan.paths, files, impactedList, deps, removed);
+  const impactedList = [...impacted.values()].sort((a, b) => a.depth - b.depth || a.path.localeCompare(b.path)).slice(0, MAX_SHOWN);
 
-  const additions = pull.additions;
-  const deletions = pull.deletions;
-  const state = pull.merged_at ? "merged" : pull.state;
+  const areaTotals: Record<string, number> = {};
+  for (const p of new Set([...scan.paths, ...removed])) {
+    const a = areaOf(p);
+    areaTotals[a] = (areaTotals[a] ?? 0) + 1;
+  }
+
+  // Import lines between the files the report shows, from importer to imported.
+  const shown = new Set([...changed, ...removed, ...impactedList.map((i) => i.path)]);
+  const edges: [string, string][] = [];
+  for (const i of impactedList) {
+    for (const t of deps.get(i.path) ?? []) if (shown.has(t) && edges.length < MAX_EDGES) edges.push([i.path, t]);
+  }
 
   return {
     repo: { owner: meta.owner, repo: meta.repo, description: meta.description, stars: meta.stars, avatar: meta.ownerAvatar },
@@ -177,15 +185,14 @@ export function buildReport(meta: RepoMeta, pull: RawPull, rawFiles: RawFile[], 
       title: pull.title,
       author: pull.user?.login ?? "ghost",
       authorAvatar: pull.user?.avatar_url ?? "",
-      state,
+      state: pull.merged_at ? "merged" : pull.state,
       draft: Boolean(pull.draft),
       base: pull.base.ref,
       head: pull.head.ref,
       headSha: pull.head.sha,
       createdAt: pull.created_at,
-      url: pull.html_url,
-      additions,
-      deletions,
+      additions: pull.additions,
+      deletions: pull.deletions,
       commits: pull.commits,
       changedFiles: pull.changed_files,
     },
@@ -193,12 +200,12 @@ export function buildReport(meta: RepoMeta, pull: RawPull, rawFiles: RawFile[], 
     level,
     summary: summarize(files, areas, impacted, tests, risks, scan),
     files: order,
-    impacted: impactedList.slice(0, 400),
+    impacted: impactedList,
     impactedTotal: impacted.size,
     tests: { changed: tests.changed, affected: tests.affected.slice(0, 200) },
     risks,
     areas,
-    map,
+    areaTotals,
     edges,
     analysis: {
       complete: scan.complete && !scan.failed,
@@ -266,7 +273,7 @@ function usersWithin(users: Map<string, string[]>, path: string, within: Set<str
 const ROLE_ORDER: Record<Role, number> = { data: 0, source: 1, test: 3, deps: 4, ci: 5, config: 6, docs: 7, asset: 8 };
 
 /** Foundations first: files the rest of the PR builds on, then their users, then tests and the rest. */
-export function reviewOrder(files: PRFile[]): PRFile[] {
+function reviewOrder(files: PRFile[]): PRFile[] {
   return [...files].sort(
     (a, b) =>
       ROLE_ORDER[a.role] - ROLE_ORDER[b.role] ||
@@ -386,7 +393,7 @@ function findRisks(
       id: "size",
       level: lines > 3000 ? "medium" : "low",
       title: "Large pull request",
-      detail: `${lines.toLocaleString("en-US")} lines across ${plural(raw.length, "file")}. Large PRs get shallower reviews; consider splitting it.`,
+      detail: `${num(lines)} lines across ${plural(raw.length, "file")}. Large PRs get shallower reviews; consider splitting it.`,
       files: [],
     });
   }
@@ -462,94 +469,6 @@ function summarize(
   if (top) out.push(`Biggest concern: ${top.title}.`);
   else out.push("Nothing stands out as risky.");
   return out;
-}
-
-// ---------------------------------------------------------------------------
-// The circle map: the whole repository as nested folders, with PR files drawn
-// individually and everything else folded into its folder.
-
-function buildMap(
-  allPaths: string[],
-  files: PRFile[],
-  impacted: Impacted[],
-  deps: Map<string, string[]>,
-  removed: Set<string>,
-): { map: MapNode; edges: [string, string][] } {
-  const state = new Map<string, MapNode["state"]>();
-  for (const f of files) state.set(f.path, f.status === "removed" ? "removed" : f.status === "added" ? "added" : "changed");
-  for (const i of impacted) {
-    if (state.size >= MAX_MAP_FILES) break;
-    state.set(i.path, i.depth === 1 ? "ripple1" : i.depth === 2 ? "ripple2" : "ripple3");
-  }
-
-  const total = Math.max(allPaths.length, 1);
-  // Highlighted files get a minimum size so they stay visible in big repositories.
-  const weight = (s: MapNode["state"]) =>
-    Math.max(1, total * (s === "ripple2" || s === "ripple3" ? 0.0012 : s?.startsWith("ripple") ? 0.002 : 0.004));
-
-  interface Dir { name: string; path: string; dirs: Map<string, Dir>; loose: number; total: number; marked: string[] }
-  const root: Dir = { name: "", path: "", dirs: new Map(), loose: 0, total: 0, marked: [] };
-  const getDir = (p: string): Dir => {
-    let d = root;
-    if (!p) return d;
-    let acc = "";
-    for (const part of p.split("/")) {
-      acc = acc ? `${acc}/${part}` : part;
-      let next = d.dirs.get(part);
-      if (!next) {
-        next = { name: part, path: acc, dirs: new Map(), loose: 0, total: 0, marked: [] };
-        d.dirs.set(part, next);
-      }
-      d = next;
-    }
-    return d;
-  };
-  const all = new Set(allPaths);
-  for (const p of removed) all.add(p);
-  for (const p of all) {
-    const d = getDir(dir(p));
-    if (state.has(p)) d.marked.push(p);
-    else d.loose++;
-  }
-  const count = (d: Dir): number => {
-    d.total = d.loose + d.marked.length;
-    for (const c of d.dirs.values()) d.total += count(c);
-    return d.total;
-  };
-  count(root);
-  const hasMarked = (d: Dir): boolean => d.marked.length > 0 || [...d.dirs.values()].some(hasMarked);
-
-  const toNode = (d: Dir, depth: number): MapNode => {
-    const children: MapNode[] = [];
-    let folded = d.loose;
-    for (const c of [...d.dirs.values()].sort((a, b) => b.total - a.total)) {
-      if (hasMarked(c)) children.push(toNode(c, depth + 1));
-      else if (depth < 2) children.push({ name: c.name, path: c.path, value: c.total, files: c.total });
-      else folded += c.total;
-    }
-    for (const m of d.marked) {
-      const s = state.get(m);
-      const lang = langOf(m);
-      children.push({ name: m.slice(m.lastIndexOf("/") + 1), path: m, value: weight(s), files: 1, state: s, color: lang.color });
-    }
-    if (folded > 0) children.push({ name: "other files", path: `${d.path}/…`, value: folded, files: folded });
-    return { name: d.name || "/", path: d.path, children };
-  };
-  const map = toNode(root, 0);
-
-  const edges: [string, string][] = [];
-  for (const i of impacted) {
-    if (edges.length >= MAX_EDGES) break;
-    if (!state.has(i.path)) continue;
-    for (const t of deps.get(i.path) ?? []) {
-      if (state.has(t) && t !== i.path) edges.push([i.path, t]);
-    }
-  }
-  return { map, edges };
-}
-
-function plural(n: number, word: string): string {
-  return `${n.toLocaleString("en-US")} ${word}${n === 1 ? "" : "s"}`;
 }
 
 function list(items: string[]): string {

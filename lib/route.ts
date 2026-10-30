@@ -1,7 +1,7 @@
 // Turns the path after gitblast.com/ (or anything a person pastes) into a view.
 // Shared by the server and the browser, so it must stay free of Node APIs.
 
-export type Route =
+type Route =
   | { kind: "repo"; owner: string; repo: string }
   | { kind: "pr"; owner: string; repo: string; number: number };
 
