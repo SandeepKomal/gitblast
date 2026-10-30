@@ -9,7 +9,7 @@ export const ROOT = "";
 /** Key for the folders folded together once there are too many to tell apart. */
 export const OTHER = "\u0000other";
 
-export interface RingFolder {
+interface RingFolder {
   key: string;
   label: string;
   color: string;
@@ -26,12 +26,12 @@ export interface RingModel {
  * One family of rich, distinct hues, ordered so neighbouring arcs contrast.
  * Loose root files and the "other" bucket stay neutral.
  */
-export const PALETTE = ["#0071e3", "#7d3cf2", "#0fa3b1", "#e8590c", "#d6336c", "#2f9e44", "#5c7cfa", "#f08c00", "#ae3ec9"];
+const PALETTE = ["#0071e3", "#7d3cf2", "#0fa3b1", "#e8590c", "#d6336c", "#2f9e44", "#5c7cfa", "#f08c00", "#ae3ec9"];
 const ROOT_COLOR = "#8b95a8";
 const OTHER_COLOR = "#c3c8d1";
 const MAX_FOLDERS = PALETTE.length;
 
-export function topFolder(dir: string): string {
+function topFolder(dir: string): string {
   return dir === "" ? ROOT : dir.split("/")[0];
 }
 
@@ -69,7 +69,7 @@ export function buildRings(frames: Frame[]): RingModel {
   return { folders, counts, totals: counts.map((row) => row.reduce((a, b) => a + b, 0)) };
 }
 
-export interface Geometry {
+interface Geometry {
   cx: number;
   cy: number;
   /** Radius of the empty centre. */
@@ -89,7 +89,7 @@ const START = -Math.PI / 2;
 /** Angle left empty between neighbouring arcs. */
 export const GAP = 0.014;
 
-export interface Arc {
+interface Arc {
   folder: number;
   start: number;
   end: number;

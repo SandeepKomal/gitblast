@@ -61,3 +61,24 @@ describe("imports", () => {
     expect(resolve(["src/a.c", "src/a.h", "include/b.h"], "src/a.c", '#include "a.h"\n#include "b.h"\n#include <stdio.h>\n')).toEqual(["include/b.h", "src/a.h"]);
   });
 });
+
+describe("hostile input", () => {
+  // Each payload took 3–107 s on a single file before the patterns were bounded.
+  const payloads = {
+    "blank lines": "\n".repeat(200_000),
+    "unterminated imports": "import x ".repeat(40_000),
+    "unclosed parentheses": "from x import (\n".repeat(40_000),
+    "unclosed import blocks": "import (\n".repeat(40_000),
+  };
+  const files = ["a.ts", "a.py", "a.go", "a.java", "a.rs", "a.rb", "a.php", "a.dart", "a.c", "a.css"];
+
+  for (const [name, text] of Object.entries(payloads)) {
+    it(`reads ${name} in linear time`, () => {
+      for (const f of files) {
+        const start = performance.now();
+        extractImports(f, text);
+        expect(performance.now() - start, f).toBeLessThan(3000);
+      }
+    });
+  }
+});

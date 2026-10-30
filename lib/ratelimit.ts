@@ -19,7 +19,14 @@ export function allow(key: string): { ok: boolean; retryAfter: number } {
   return { ok: h.count <= LIMIT, retryAfter: Math.ceil((h.reset - now) / 1000) };
 }
 
+/**
+ * The client's address as our own proxy saw it. The first X-Forwarded-For entry
+ * is whatever the client sent, so it can't be trusted for rate limiting; use the
+ * proxy-set X-Real-IP, else the last hop, which our proxy appended.
+ */
 export function clientKey(headers: Headers): string {
-  const fwd = headers.get("x-forwarded-for");
-  return (fwd ? fwd.split(",")[0] : headers.get("x-real-ip") ?? "local").trim();
+  const real = headers.get("x-real-ip");
+  if (real) return real.trim();
+  const hops = headers.get("x-forwarded-for")?.split(",") ?? [];
+  return hops[hops.length - 1]?.trim() || "local";
 }

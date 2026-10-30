@@ -175,8 +175,9 @@ Every pull request then gets its own preview URL, and every push to `main` deplo
 
 It also runs anywhere Node.js runs (`npm ci && npm run build && npm start`, port 3000). API routes set
 `Cache-Control` headers so a CDN can serve popular links. The rate limiter and cache live in memory on each
-instance, which is fine for one or a few instances. The rate limiter keys on `X-Forwarded-For`, so run it behind
-a proxy that sets that header (Vercel and most load balancers do).
+instance, which is fine for one or a few instances. The rate limiter keys on `X-Real-IP`, or else the last
+`X-Forwarded-For` entry (the one your proxy added), so run it behind a proxy that sets one of them (Vercel and
+most load balancers do).
 
 ## Being a good citizen
 

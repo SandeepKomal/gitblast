@@ -7,7 +7,7 @@ import type { PRReport } from "@/lib/types";
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
-const cache = new TTLCache<PRReport>(200);
+const cache = new TTLCache<PRReport>(50);
 
 export async function GET(req: Request) {
   const q = new URL(req.url).searchParams;

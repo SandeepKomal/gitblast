@@ -5,7 +5,7 @@
 
 import { extOf } from "./lang";
 
-export interface RepoFiles {
+interface RepoFiles {
   files: Set<string>;
   /** Files that existed before the change but were deleted by it. */
   removed: Set<string>;
@@ -39,7 +39,7 @@ export function indexFiles(paths: Iterable<string>, removed: Iterable<string> = 
 export function noteManifest(idx: RepoFiles, path: string, text: string): void {
   const b = base(path);
   if (b === "go.mod") {
-    const m = text.match(/^\s*module\s+(\S+)/m);
+    const m = text.match(/^[ \t]*module[ \t]+(\S+)/m);
     if (m) idx.goModules.push({ module: m[1].replace(/^"|"$/g, ""), dir: dir(path) });
   } else if (b === "package.json") {
     try {
@@ -59,23 +59,25 @@ export function isManifest(path: string): boolean {
 // ---------------------------------------------------------------------------
 // Extraction: raw import strings, by language.
 
-const JS_FROM = /(?:^|[\s;}])(?:import|export)\s[^'"`;]*?\sfrom\s*['"]([^'"\n]+)['"]/g;
+// Every pattern is anchored to one line ([ \t], not \s) or has a bounded span, so a crafted
+// file can't make a pattern rescan it from every position (ReDoS).
+const JS_FROM = /(?:^|[\s;}])(?:import|export)\s[^'"`;]{0,1000}?\sfrom\s*['"]([^'"\n]+)['"]/g;
 const JS_BARE = /(?:^|[\s;])import\s*['"]([^'"\n]+)['"]/g;
 const JS_CALL = /(?:\bimport|\brequire)\s*\(\s*['"]([^'"\n]+)['"]\s*\)/g;
 const CSS_IMPORT = /@(?:import|use|forward)\s+(?:url\()?\s*['"]([^'"\n]+)['"]/g;
-const PY_FROM = /^[ \t]*from[ \t]+([.\w]+)[ \t]+import[ \t]+(?:\(([^)]*)\)|([^\n#]+))/gm;
+const PY_FROM = /^[ \t]*from[ \t]+([.\w]+)[ \t]+import[ \t]+(?:\(([^)]{0,2000})\)|([^\n#]+))/gm;
 const PY_IMPORT = /^[ \t]*import[ \t]+([\w., \t]+)/gm;
-const GO_BLOCK = /^import\s*\(([\s\S]*?)\)/gm;
+const GO_BLOCK = /^import\s*\(([^)]{0,2000})\)/gm;
 const GO_SINGLE = /^import\s+(?:[\w.]+\s+)?"([^"]+)"/gm;
 const GO_STRING = /"([^"\n]+)"/g;
-const RS_MOD = /^\s*(?:pub(?:\([^)]*\))?\s+)?mod\s+(\w+)\s*;/gm;
-const RS_USE = /^\s*(?:pub(?:\([^)]*\))?\s+)?use\s+crate::([\w:]+)/gm;
-const JVM_IMPORT = /^\s*import\s+(?:static\s+)?([\w.]+?)(\.\*)?\s*;?\s*$/gm;
-const RB_REQUIRE = /^\s*require(_relative)?\s*\(?\s*['"]([^'"\n]+)['"]/gm;
-const PHP_USE = /^\s*use\s+([\w\\]+)(?:\s+as\s+\w+)?\s*;/gm;
+const RS_MOD = /^[ \t]*(?:pub(?:\([^)\n]{0,40}\))?[ \t]+)?mod[ \t]+(\w+)[ \t]*;/gm;
+const RS_USE = /^[ \t]*(?:pub(?:\([^)\n]{0,40}\))?[ \t]+)?use[ \t]+crate::([\w:]+)/gm;
+const JVM_IMPORT = /^[ \t]*import[ \t]+(?:static[ \t]+)?([\w.]+?)(\.\*)?[ \t]*;?[ \t]*$/gm;
+const RB_REQUIRE = /^[ \t]*require(_relative)?[ \t]*\(?[ \t]*['"]([^'"\n]+)['"]/gm;
+const PHP_USE = /^[ \t]*use[ \t]+([\w\\]+)(?:[ \t]+as[ \t]+\w+)?[ \t]*;/gm;
 const PHP_INCLUDE = /\b(?:require|include)(?:_once)?\s*\(?\s*(?:__DIR__\s*\.\s*)?['"]([^'"\n]+)['"]/g;
-const DART_IMPORT = /^\s*(?:import|export|part)\s+['"]([^'"\n]+)['"]/gm;
-const C_INCLUDE = /^\s*#\s*include\s+"([^"\n]+)"/gm;
+const DART_IMPORT = /^[ \t]*(?:import|export|part)[ \t]+['"]([^'"\n]+)['"]/gm;
+const C_INCLUDE = /^[ \t]*#[ \t]*include[ \t]+"([^"\n]+)"/gm;
 
 function all(re: RegExp, text: string, group = 1): string[] {
   const out: string[] = [];

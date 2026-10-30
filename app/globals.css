@@ -45,7 +45,6 @@
   --map-folder: rgba(0, 0, 0, 0.022);
   --map-folder-line: rgba(0, 0, 0, 0.07);
   --map-edge: #ff9500;
-  --map-edge-active: #1d1d1f;
 
   --nav-bg: rgba(251, 251, 253, 0.8);
   --tooltip-bg: rgba(255, 255, 255, 0.97);
@@ -99,7 +98,6 @@
     --map-folder: rgba(255, 255, 255, 0.03);
     --map-folder-line: rgba(255, 255, 255, 0.08);
     --map-edge: #ff9f0a;
-    --map-edge-active: #f5f5f7;
 
     --nav-bg: rgba(22, 22, 23, 0.8);
     --tooltip-bg: rgba(44, 44, 46, 0.97);
@@ -167,10 +165,6 @@ code,
   max-width: 1100px;
   margin: 0 auto;
   padding: 0 22px;
-}
-
-.wrap-wide {
-  max-width: 1280px;
 }
 
 @media (max-width: 640px) {
@@ -416,17 +410,6 @@ main.alt {
   background: var(--fill-hover);
 }
 
-.btn-outline {
-  background: transparent;
-  color: var(--link);
-  box-shadow: inset 0 0 0 1px var(--link);
-}
-
-.btn-outline:hover {
-  background: var(--link);
-  color: #fff;
-}
-
 .btn-sm {
   padding: 7px 15px;
   font-size: 13px;
@@ -462,8 +445,7 @@ main.alt {
   }
 }
 
-.card h2,
-.section-title {
+.card h2 {
   font-family: var(--font-display);
   font-size: 21px;
   font-weight: 600;
@@ -1468,25 +1450,14 @@ main.alt {
 .stage canvas {
   display: block;
   width: 100%;
-  aspect-ratio: 16 / 11;
-  cursor: crosshair;
-}
-
-@media (max-width: 640px) {
-  .stage canvas {
-    aspect-ratio: 1 / 1;
-  }
+  aspect-ratio: 16 / 10;
 }
 
 .stage-caption {
-  position: absolute;
-  left: 26px;
-  top: 22px;
-  right: 26px;
   display: flex;
   justify-content: space-between;
   gap: 16px;
-  pointer-events: none;
+  padding: 24px 26px 0;
 }
 
 .stage-date {
@@ -1527,10 +1498,12 @@ main.alt {
 }
 
 @media (max-width: 640px) {
+  .stage canvas {
+    aspect-ratio: 1 / 1;
+  }
+
   .stage-caption {
-    left: 18px;
-    right: 18px;
-    top: 16px;
+    padding: 18px 18px 0;
   }
 
   .stage-commit {
@@ -1903,10 +1876,6 @@ button.graph-row:hover,
 
 /* ---------- growth rings ---------- */
 
-.stage canvas {
-  aspect-ratio: 16 / 10;
-}
-
 .ring-legend {
   display: flex;
   flex-wrap: wrap;
@@ -1984,31 +1953,11 @@ button.graph-row:hover,
   font-size: 12px;
 }
 
-.stage {
-  display: flex;
-  flex-direction: column;
-}
-
-.stage .stage-caption {
-  position: static;
-  order: -1;
-  padding: 24px 26px 0;
-  pointer-events: auto;
-}
-
 .tooltip.below {
   transform: translate(-50%, 18px);
 }
 
 @media (max-width: 640px) {
-  .stage canvas {
-    aspect-ratio: 1 / 1;
-  }
-
-  .stage .stage-caption {
-    padding: 18px 18px 0;
-  }
-
   .ring-legend {
     padding: 4px 16px;
   }
