@@ -1,4 +1,5 @@
 import { ImageResponse } from "next/og";
+import { markDataUri } from "@/components/Logo";
 import { parseSegments } from "@/lib/route";
 
 const size = { width: 1200, height: 630 };
@@ -27,7 +28,7 @@ export function GET(req: Request) {
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: 14, fontSize: 32, fontWeight: 600 }}>
-          <div style={{ width: 34, height: 34, borderRadius: 17, background: "linear-gradient(90deg,#ff9500,#ff3b30,#ff2d55)" }} />
+          <img src={markDataUri()} width={44} height={44} alt="" />
           gitblast
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
