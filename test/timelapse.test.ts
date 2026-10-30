@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { blend, HERE, layoutFrames } from "@/components/timelapse-layout";
+import { arcs, buildRings, GAP, geometry, hitTest, OTHER, ROOT } from "@/components/rings";
 import { folderKey, milestones } from "@/lib/timelapse";
 import type { Frame } from "@/lib/types";
 
@@ -40,25 +40,45 @@ describe("milestones", () => {
   });
 });
 
-describe("layout", () => {
-  const frames = [frame(1, { "": 2, src: 3 }), frame(2, { "": 2, src: 3, "src/lib": 4, docs: 5 })];
-  const layouts = layoutFrames(frames);
+describe("growth rings", () => {
+  const frames = [frame(1, { "": 2, src: 6 }), frame(2, { "": 2, src: 3, "src/lib": 5, docs: 10 })];
+  const model = buildRings(frames);
 
-  it("separates files sitting next to subfolders", () => {
-    expect(layouts[1].has(`src/${HERE}`)).toBe(true);
-    expect(layouts[1].get("src")?.leaf).toBe(false);
-    expect(layouts[0].get("src")?.leaf).toBe(true);
+  it("folds sub-folders into their top-level folder and keeps root files apart", () => {
+    expect(model.folders.map((f) => f.key)).toEqual(["docs", "src", ROOT]);
+    expect(model.counts).toEqual([
+      [0, 6, 2],
+      [10, 8, 2],
+    ]);
+    expect(model.totals).toEqual([8, 20]);
   });
 
-  it("grows the whole map as the repository grows", () => {
-    const span = (m: Map<string, { r: number; depth: number }>) => Math.max(...[...m.values()].filter((p) => p.depth === 1).map((p) => p.r));
-    expect(span(layouts[1])).toBeGreaterThan(span(layouts[0]) * 0.9);
+  it("gives each folder the same colour on every ring, and folds the long tail into one bucket", () => {
+    const many: Record<string, number> = {};
+    for (let i = 0; i < 14; i++) many[`f${String(i).padStart(2, "0")}`] = 20 - i;
+    const m = buildRings([frame(1, many)]);
+    expect(m.folders).toHaveLength(10);
+    expect(m.folders[9]).toMatchObject({ key: OTHER, label: "5 more folders" });
+    expect(new Set(m.folders.slice(0, 9).map((f) => f.color)).size).toBe(9);
+    expect(m.totals[0]).toBe(Object.values(many).reduce((a, b) => a + b, 0));
   });
 
-  it("blends new circles in from nothing", () => {
-    const mid = blend(layouts[0], layouts[1], 0.5);
-    const docs = mid.find((p) => p.key === "docs");
-    expect(docs?.fresh).toBeCloseTo(0.5);
-    expect(docs?.r).toBeCloseTo((layouts[1].get("docs")?.r ?? 0) * 0.5);
+  it("splits a ring in proportion, leaving a small gap between arcs", () => {
+    const a = arcs([10, 0, 30]);
+    expect(a.map((x) => x.folder)).toEqual([0, 2]);
+    const sweep = (x: { start: number; end: number }) => x.end - x.start;
+    expect(sweep(a[1]) / sweep(a[0])).toBeCloseTo(3);
+    expect(a[1].start - a[0].end).toBeCloseTo(GAP);
+    expect(arcs([5])[0].end - arcs([5])[0].start).toBeCloseTo(Math.PI * 2);
+  });
+
+  it("finds the ring and folder under the pointer", () => {
+    const g = geometry(400, 400, frames.length);
+    // Straight up from the centre is where every ring starts, in the first folder that has files.
+    const upInRing = (ring: number) => hitTest(model, g, 2, g.cx, g.cy - (g.inner + g.band * (ring + 0.5)));
+    expect(upInRing(0)).toEqual({ frame: 0, folder: 1 });
+    expect(upInRing(1)).toEqual({ frame: 1, folder: 0 });
+    expect(hitTest(model, g, 2, g.cx, g.cy)).toBeNull();
+    expect(hitTest(model, g, 1, g.cx, g.cy - (g.inner + g.band * 1.5))).toBeNull();
   });
 });
