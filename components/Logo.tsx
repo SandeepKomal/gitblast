@@ -13,6 +13,16 @@ export const MARK_PATHS = {
   ],
 };
 
+/** The name: "git" in light code type, "blast" in the bold blast gradient. */
+export function Wordmark({ className = "" }: { className?: string }) {
+  return (
+    <span className={`wordmark ${className}`.trim()} aria-label="gitblast">
+      <span className="wordmark-git" aria-hidden="true">git</span>
+      <span className="wordmark-blast" aria-hidden="true">blast</span>
+    </span>
+  );
+}
+
 export function LogoMark({ size = 26 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 64 64" aria-hidden="true">
