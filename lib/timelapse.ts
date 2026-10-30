@@ -3,7 +3,7 @@
 
 import { api, getRepo, GitHubError, mapLimit } from "./github";
 import { langOf } from "./lang";
-import type { Frame, Timelapse } from "./types";
+import type { Frame, Milestone, Timelapse } from "./types";
 
 interface RawCommit {
   sha: string;
@@ -175,8 +175,8 @@ function toFrame(c: RawCommit, t: RawTree, index: number, depth: number, colors:
 
 const QUIET_LANGS = new Set(["Other", "Config", "Markdown", "Image"]);
 
-export function milestones(frames: Frame[]): { frame: number; label: string }[] {
-  const out: { frame: number; label: string }[] = [];
+export function milestones(frames: Frame[]): Milestone[] {
+  const out: Milestone[] = [];
   const seenTop = new Set<string>();
   const seenLang = new Set<string>();
   frames.forEach((f, i) => {
@@ -184,11 +184,11 @@ export function milestones(frames: Frame[]): { frame: number; label: string }[] 
     const langs = Object.keys(f.langs).filter((l) => !QUIET_LANGS.has(l) && f.langs[l] >= 3);
     if (i > 0) {
       const newTops = [...tops].filter((t) => !seenTop.has(t));
-      if (newTops.length > 0 && newTops.length <= 3) out.push({ frame: i, label: `${newTops.map((t) => `${t}/`).join(", ")} appears` });
-      for (const l of langs) if (!seenLang.has(l)) out.push({ frame: i, label: `First ${l} code` });
+      if (newTops.length <= 3) for (const t of newTops) out.push({ frame: i, label: `${t}/ appears`, kind: "folder", key: t });
+      for (const l of langs) if (!seenLang.has(l)) out.push({ frame: i, label: `First ${l} code`, kind: "language", key: l });
       const prev = frames[i - 1];
-      if (prev.files > 50 && f.files > prev.files * 1.6) out.push({ frame: i, label: `Grows ${Math.round((f.files / prev.files - 1) * 100)}%` });
-      if (prev.files > 50 && f.files < prev.files * 0.7) out.push({ frame: i, label: `Big clean-up (−${Math.round((1 - f.files / prev.files) * 100)}%)` });
+      if (prev.files > 50 && f.files > prev.files * 1.6) out.push({ frame: i, label: `Grows ${Math.round((f.files / prev.files - 1) * 100)}%`, kind: "growth" });
+      if (prev.files > 50 && f.files < prev.files * 0.7) out.push({ frame: i, label: `Big clean-up (−${Math.round((1 - f.files / prev.files) * 100)}%)`, kind: "cleanup" });
     }
     tops.forEach((t) => seenTop.add(t));
     langs.forEach((l) => seenLang.add(l));

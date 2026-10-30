@@ -6,6 +6,7 @@ import { ago, num } from "@/lib/format";
 import type { Impacted, Level, PRFile, PRReport } from "@/lib/types";
 import { useApi } from "@/lib/useApi";
 import { CopyLink } from "./CopyLink";
+import { GraphList, type GraphRow } from "./GraphList";
 import { Legend, PackMap } from "./PackMap";
 import { ErrorState, Loading } from "./States";
 
@@ -123,7 +124,7 @@ function Report({ report }: { report: PRReport }) {
         <div className="stack">
           <Risks report={report} />
           <ReviewOrder files={report.files} active={active} onActive={setActive} fileUrl={fileUrl} />
-          <Ripple impacted={report.impacted} total={report.impactedTotal} onActive={setActive} />
+          <Ripple files={report.files} impacted={report.impacted} total={report.impactedTotal} onActive={setActive} />
           <Tests tests={report.tests} />
           <Areas areas={report.areas} />
         </div>
@@ -273,8 +274,71 @@ function ReviewOrder({
 const DEPTH_TEXT = ["", "Imports the changed code directly", "Two steps away", "Three steps away"];
 const DEPTH_COLOR = ["", "var(--ripple1)", "var(--ripple2)", "var(--ripple3)"];
 
-function Ripple({ impacted, total, onActive }: { impacted: Impacted[]; total: number; onActive: (p: string | null) => void }) {
-  const [all, setAll] = useState(false);
+const BRANCH_COLORS = ["#0071e3", "#0fa3b1", "#7d3cf2"];
+const PER_BRANCH = 4;
+const QUIET_FILES = 4;
+
+/**
+ * The ripple as a git graph: the PR is the root, the changed files that reach
+ * the most code each get a lane, and the files importing them hang off it.
+ */
+function rippleRows(files: PRFile[], impacted: Impacted[], onActive: (p: string | null) => void) {
+  const hover = (path: string) => (on: boolean) => onActive(on ? path : null);
+  const branches = files.filter((f) => f.reach > 0).sort((a, b) => b.reach - a.reach).slice(0, BRANCH_COLORS.length);
+  const rows: GraphRow[] = [];
+  branches.forEach((f, b) => {
+    rows.push({
+      key: f.path,
+      lane: b + 1,
+      label: <span className="graph-mono">{f.path}</span>,
+      title: f.path,
+      tag: "changed",
+      meta: `reaches ${num(f.reach)}`,
+      lit: true,
+      onHover: hover(f.path),
+    });
+    for (const i of impacted.filter((x) => x.via === f.path).slice(0, PER_BRANCH)) {
+      rows.push({
+        key: `${f.path}>${i.path}`,
+        lane: b + 1,
+        label: <span className="graph-mono">{i.path}</span>,
+        title: `${i.path}\nimports ${f.path}`,
+        tag: i.test ? "test" : i.depth === 1 ? "imports it" : `${i.depth} steps`,
+        onHover: hover(i.path),
+      });
+    }
+  });
+  for (const f of files.filter((x) => !branches.includes(x)).slice(0, QUIET_FILES)) {
+    rows.push({
+      key: f.path,
+      lane: 0,
+      label: <span className="graph-mono">{f.path}</span>,
+      title: f.path,
+      tag: f.status === "removed" ? "deleted" : f.reach === 0 ? "no importers" : undefined,
+      dot: f.status === "removed" ? "var(--removed)" : undefined,
+      meta: (
+        <span className="mono">
+          <span className="plus">+{f.additions}</span> <span className="minus">−{f.deletions}</span>
+        </span>
+      ),
+      onHover: hover(f.path),
+    });
+  }
+  return rows;
+}
+
+function Ripple({
+  files,
+  impacted,
+  total,
+  onActive,
+}: {
+  files: PRFile[];
+  impacted: Impacted[];
+  total: number;
+  onActive: (p: string | null) => void;
+}) {
+  const [list, setList] = useState(false);
   if (total === 0) return null;
   const groups = ([1, 2, 3] as const).map((d) => impacted.filter((i) => i.depth === d)).filter((g) => g.length > 0);
   return (
@@ -282,33 +346,46 @@ function Ripple({ impacted, total, onActive }: { impacted: Impacted[]; total: nu
       <h2>
         Ripple effect <span className="count">{num(total)}</span>
       </h2>
-      {groups.map((g) => {
-        const d = g[0].depth;
-        const shown = all ? g : g.slice(0, 8);
-        return (
-          <div className="ripple-group" key={d}>
-            <h3>
-              <i className="dot" style={{ background: DEPTH_COLOR[d] }} />
-              {DEPTH_TEXT[d]} <span className="faint">{g.length}</span>
-            </h3>
-            <ul className="path-list">
-              {shown.map((i) => (
-                <li key={i.path} title={`${i.path}\nvia ${i.via}`} onMouseEnter={() => onActive(i.path)} onMouseLeave={() => onActive(null)}>
-                  {i.path}
-                </li>
-              ))}
-            </ul>
-          </div>
-        );
-      })}
-      {impacted.length > 8 && (
-        <button className="btn btn-ghost more-btn" onClick={() => setAll(!all)}>
-          {all ? "Show fewer" : "Show all"}
-        </button>
+      {list ? (
+        groups.map((g) => {
+          const d = g[0].depth;
+          return (
+            <div className="ripple-group" key={d}>
+              <h3>
+                <i className="dot" style={{ background: DEPTH_COLOR[d] }} />
+                {DEPTH_TEXT[d]} <span className="faint">{g.length}</span>
+              </h3>
+              <ul className="path-list">
+                {g.map((i) => (
+                  <li key={i.path} title={`${i.path}\nvia ${i.via}`} onMouseEnter={() => onActive(i.path)} onMouseLeave={() => onActive(null)}>
+                    {i.path}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          );
+        })
+      ) : (
+        <GraphList
+          root={{ label: `This pull request changes ${plural(files.length, "file")}`, color: "var(--changed)" }}
+          lanes={BRANCH_COLORS}
+          rows={rippleRows(files, impacted, onActive)}
+        />
       )}
-      {total > impacted.length && <p className="faint" style={{ fontSize: 12.5, margin: "10px 0 0" }}>Showing {num(impacted.length)} of {num(total)}.</p>}
+      <button className="btn btn-ghost graph-more" onClick={() => setList(!list)}>
+        {list ? "Show as graph" : `Show all ${num(total)} files`}
+      </button>
+      {list && total > impacted.length && (
+        <p className="faint" style={{ fontSize: 12.5, margin: "10px 0 0" }}>
+          Showing {num(impacted.length)} of {num(total)}.
+        </p>
+      )}
     </div>
   );
+}
+
+function plural(n: number, word: string) {
+  return `${num(n)} ${word}${n === 1 ? "" : "s"}`;
 }
 
 function Tests({ tests }: { tests: PRReport["tests"] }) {

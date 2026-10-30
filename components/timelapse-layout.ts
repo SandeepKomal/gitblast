@@ -111,7 +111,7 @@ export function blend(a: Map<string, Placed>, b: Map<string, Placed>, k: number)
  * One cool family (blues, indigos, violets, teals) of similar weight, so the
  * map reads as a single object rather than a box of crayons.
  */
-export const PALETTE = ["#0a84ff", "#5e5ce6", "#40c8e0", "#9b6cf0", "#3d9bf5", "#7a78f2", "#2fb5c9", "#b48af5", "#5aa9ff", "#6f8cf7"];
+export const PALETTE = ["#0071e3", "#5e5ce6", "#0fa3b1", "#bf5af2", "#2997ff", "#7d3cf2", "#30b0c7", "#af52de", "#0a84ff", "#6e6cf0"];
 
 /** Loose files in the repository root are not an area of their own, so they get a quiet slate. */
 const ROOT_FILES = "#8b95a8";
