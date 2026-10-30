@@ -7,6 +7,7 @@ import { bytes, compact, day, monthYear, num } from "@/lib/format";
 import type { Frame, PullSummary, Timelapse } from "@/lib/types";
 import { useApi } from "@/lib/useApi";
 import { CopyLink } from "./CopyLink";
+import { GraphList, type GraphRow } from "./GraphList";
 import { ErrorState, Loading } from "./States";
 import { blend, HERE, layoutFrames, topColors, type Placed } from "./timelapse-layout";
 
@@ -329,20 +330,15 @@ function Player({ data }: { data: Timelapse }) {
           </div>
           {current && <Languages frame={current} colors={data.langColors} />}
           {data.milestones.length > 0 && (
-            <div className="card card-pad">
-              <h2>Moments</h2>
-              <ul className="milestones">
-                {data.milestones.map((m, i) => (
-                  <li key={i}>
-                    <button className={m.frame <= t ? "past" : ""} onClick={() => { play(false); seek(m.frame); }}>
-                      <i className="dot" style={{ background: m.frame <= t ? "var(--ripple1)" : "var(--faint)" }} />
-                      {m.label}
-                      <span className="when">{monthYear(frames[m.frame]?.date ?? "")}</span>
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            </div>
+            <History
+              data={data}
+              colors={colors}
+              t={t}
+              onSeek={(frame) => {
+                play(false);
+                seek(frame);
+              }}
+            />
           )}
           {data.contributors.length > 0 && (
             <div className="card card-pad">
@@ -361,6 +357,66 @@ function Player({ data }: { data: Timelapse }) {
 
       <PullRequests owner={repo.owner} repo={repo.repo} />
     </>
+  );
+}
+
+const MAX_FOLDER_LANES = 3;
+const LANGUAGE_LANE = "#bf5af2";
+
+/**
+ * The milestones as a git graph: each new top-level folder branches off on a
+ * lane in the colour it has on the map, languages share a lane, and changes in
+ * size stay on the trunk. Moments already reached are lit.
+ */
+function History({
+  data,
+  colors,
+  t,
+  onSeek,
+}: {
+  data: Timelapse;
+  colors: Map<string, string>;
+  t: number;
+  onSeek: (frame: number) => void;
+}) {
+  const { milestones, frames } = data;
+  const lanes: string[] = [];
+  const laneOf = new Map<string, number>();
+  for (const m of milestones) {
+    if (m.kind !== "folder" || !m.key || laneOf.has(m.key) || laneOf.size >= MAX_FOLDER_LANES) continue;
+    lanes.push(colors.get(m.key) ?? NEUTRAL);
+    laneOf.set(m.key, lanes.length);
+  }
+  let languageLane = 0;
+  if (milestones.some((m) => m.kind === "language")) {
+    lanes.push(LANGUAGE_LANE);
+    languageLane = lanes.length;
+  }
+
+  const rows: GraphRow[] = milestones.map((m, i) => {
+    const folderLane = m.kind === "folder" && m.key ? (laneOf.get(m.key) ?? 0) : 0;
+    const lane = m.kind === "language" ? languageLane : folderLane;
+    return {
+      key: `${i}-${m.label}`,
+      lane,
+      label: m.label,
+      tag: m.kind === "folder" ? "folder" : m.kind === "language" ? "language" : "size",
+      dot: m.kind === "language" && m.key ? data.langColors[m.key] : m.kind === "folder" && m.key ? colors.get(m.key) : undefined,
+      meta: monthYear(frames[m.frame]?.date ?? ""),
+      lit: m.frame <= t,
+      onClick: () => onSeek(m.frame),
+    };
+  });
+
+  return (
+    <div className="card card-pad">
+      <h2>History</h2>
+      <GraphList
+        root={{ label: "First commit", color: "#34c759", meta: monthYear(frames[0]?.date ?? "") }}
+        lanes={lanes}
+        rows={rows}
+      />
+    </div>
   );
 }
 
