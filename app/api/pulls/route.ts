@@ -11,7 +11,7 @@ const cache = new TTLCache<PullSummary[]>(200);
 interface RawPull {
   number: number;
   title: string;
-  user: { login: string; avatar_url: string } | null;
+  user: { login: string } | null;
   updated_at: string;
   draft?: boolean;
 }
@@ -30,7 +30,6 @@ export async function GET(req: Request) {
         number: p.number,
         title: p.title,
         author: p.user?.login ?? "ghost",
-        avatar: p.user?.avatar_url ?? "",
         updatedAt: p.updated_at,
         draft: Boolean(p.draft),
       }));

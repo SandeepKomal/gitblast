@@ -175,7 +175,6 @@ function Player({ data }: { data: Timelapse }) {
     <>
       <header className="page-head">
         <div className="crumbs">
-          {repo.avatar && <img className="avatar" src={repo.avatar} alt="" width={20} height={20} referrerPolicy="no-referrer" />}
           <span>{repo.owner}</span>
           <span className="sep">/</span>
           <b style={{ color: "var(--text)", fontWeight: 600 }}>{repo.repo}</b>
@@ -217,7 +216,6 @@ function Player({ data }: { data: Timelapse }) {
               <div className="stage-commit">
                 <div className="msg">{current.message}</div>
                 <div className="by">
-                  {current.avatar && <img className="avatar" src={current.avatar} alt="" width={16} height={16} referrerPolicy="no-referrer" />}
                   {current.author}
                   <span className="sha">
                     · <span className="mono">{current.sha.slice(0, 7)}</span>
@@ -298,8 +296,8 @@ function Player({ data }: { data: Timelapse }) {
               <h2>Top contributors</h2>
               <div className="people">
                 {data.contributors.map((c) => (
-                  <a key={c.login} href={`https://github.com/${c.login}`} target="_blank" rel="noopener noreferrer" title={`${c.login} · ${num(c.contributions)} commits`}>
-                    <img className="avatar" src={c.avatar} alt={c.login} width={36} height={36} referrerPolicy="no-referrer" />
+                  <a key={c.login} className="pill" href={`https://github.com/${c.login}`} target="_blank" rel="noopener noreferrer" title={`${num(c.contributions)} commits`}>
+                    {c.login}
                   </a>
                 ))}
               </div>
@@ -639,7 +637,6 @@ function PullRequests({ owner, repo }: { owner: string; repo: string }) {
             {state.data.map((p) => (
               <li key={p.number}>
                 <Link href={`/${owner}/${repo}/pull/${p.number}`}>
-                  {p.avatar ? <img className="avatar" src={p.avatar} alt="" width={22} height={22} referrerPolicy="no-referrer" /> : <span />}
                   <span className="t">
                     <span className="faint mono">#{p.number}</span> {p.title}
                     {p.draft && <span className="pill" style={{ marginLeft: 8 }}>Draft</span>}

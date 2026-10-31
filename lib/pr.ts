@@ -12,7 +12,7 @@ import type { Impacted, Level, PRFile, PRReport, Risk, Role } from "./types";
 interface RawPull {
   number: number;
   title: string;
-  user: { login: string; avatar_url: string } | null;
+  user: { login: string } | null;
   state: "open" | "closed";
   merged_at: string | null;
   draft?: boolean;
@@ -179,12 +179,11 @@ export function buildReport(meta: RepoMeta, pull: RawPull, rawFiles: RawFile[], 
   }
 
   return {
-    repo: { owner: meta.owner, repo: meta.repo, description: meta.description, stars: meta.stars, avatar: meta.ownerAvatar },
+    repo: { owner: meta.owner, repo: meta.repo, description: meta.description, stars: meta.stars },
     pr: {
       number: pull.number,
       title: pull.title,
       author: pull.user?.login ?? "ghost",
-      authorAvatar: pull.user?.avatar_url ?? "",
       state: pull.merged_at ? "merged" : pull.state,
       draft: Boolean(pull.draft),
       base: pull.base.ref,

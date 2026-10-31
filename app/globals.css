@@ -493,12 +493,6 @@ main.alt {
   flex: none;
 }
 
-.avatar {
-  border-radius: 50%;
-  background: var(--fill);
-  flex: none;
-}
-
 .muted { color: var(--muted); }
 .faint { color: var(--faint); }
 .plus { color: var(--low); }
@@ -1620,17 +1614,7 @@ main.alt {
 .people {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
-}
-
-.people a {
-  display: block;
-  border-radius: 50%;
-  transition: transform 0.15s;
-}
-
-.people a:hover {
-  transform: scale(1.06);
+  gap: 8px;
 }
 
 .pulls {
@@ -1641,7 +1625,7 @@ main.alt {
 
 .pulls a {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr) auto;
   gap: 14px;
   align-items: center;
   padding: 12px 12px;

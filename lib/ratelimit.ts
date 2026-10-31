@@ -1,15 +1,22 @@
 // Per-client limit on analyses, so one script can't spend the whole GitHub
 // token budget. In-memory per instance; swap for a shared store if you run many.
+// Addresses are kept only as salted hashes, and only until their window ends.
+
+import { createHash, randomBytes } from "node:crypto";
 
 const WINDOW_MS = 10 * 60 * 1000;
 const LIMIT = 40;
+const SALT = randomBytes(16);
 const hits = new Map<string, { count: number; reset: number }>();
+let nextSweep = 0;
 
-export function allow(key: string): { ok: boolean; retryAfter: number } {
+export function allow(client: string): { ok: boolean; retryAfter: number } {
   const now = Date.now();
-  if (hits.size > 50_000) {
+  if (now >= nextSweep) {
     for (const [k, v] of hits) if (v.reset <= now) hits.delete(k);
+    nextSweep = now + 60_000;
   }
+  const key = createHash("sha256").update(SALT).update(client).digest("base64url");
   const h = hits.get(key);
   if (!h || h.reset <= now) {
     hits.set(key, { count: 1, reset: now + WINDOW_MS });

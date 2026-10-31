@@ -43,7 +43,6 @@ function Report({ report }: { report: PRReport }) {
     <>
       <header className="page-head">
         <div className="crumbs">
-          {repo.avatar && <img className="avatar" src={repo.avatar} alt="" width={20} height={20} referrerPolicy="no-referrer" />}
           <Link href={`/${repo.owner}/${repo.repo}`}>
             {repo.owner}/<b style={{ color: "var(--text)", fontWeight: 600 }}>{repo.repo}</b>
           </Link>
@@ -56,7 +55,6 @@ function Report({ report }: { report: PRReport }) {
         <div className="meta-row">
           <span className={`pill pill-${pr.state}`}>{pr.draft && pr.state === "open" ? "Draft" : cap(pr.state)}</span>
           <span className="who">
-            {pr.authorAvatar && <img className="avatar" src={pr.authorAvatar} alt="" width={20} height={20} referrerPolicy="no-referrer" />}
             <span style={{ color: "var(--text)" }}>{pr.author}</span>
           </span>
           <span>

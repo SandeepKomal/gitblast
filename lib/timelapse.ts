@@ -13,7 +13,7 @@ interface RawCommit {
     committer: { date: string } | null;
     tree: { sha: string };
   };
-  author: { login: string; avatar_url: string } | null;
+  author: { login: string } | null;
 }
 
 interface RawTree {
@@ -23,7 +23,6 @@ interface RawTree {
 
 interface RawContributor {
   login?: string;
-  avatar_url?: string;
   contributions: number;
   type: string;
 }
@@ -94,9 +93,9 @@ export async function analyzeTimelapse(owner: string, repo: string): Promise<Tim
   try {
     const { data } = await api<RawContributor[]>(`${base}/contributors?per_page=12`);
     contributors = data
-      .filter((c) => c.type !== "Bot" && c.login && c.avatar_url)
+      .filter((c) => c.type !== "Bot" && c.login)
       .slice(0, 10)
-      .map((c) => ({ login: c.login as string, avatar: c.avatar_url as string, contributions: c.contributions }));
+      .map((c) => ({ login: c.login as string, contributions: c.contributions }));
   } catch {
     // Very large repositories can't list contributors; the page copes without.
   }
@@ -107,7 +106,6 @@ export async function analyzeTimelapse(owner: string, repo: string): Promise<Tim
       repo: meta.repo,
       description: meta.description,
       stars: meta.stars,
-      avatar: meta.ownerAvatar,
       defaultBranch: meta.defaultBranch,
       createdAt: meta.createdAt,
       language: meta.language,
@@ -148,7 +146,6 @@ function toFrame(c: RawCommit, t: RawTree, index: number, colors: Record<string,
     sha: c.sha,
     date: c.commit.author?.date ?? c.commit.committer?.date ?? "",
     author: c.author?.login ?? c.commit.author?.name ?? "unknown",
-    avatar: c.author?.avatar_url,
     message: c.commit.message.split("\n")[0].slice(0, 140),
     index,
     files,
