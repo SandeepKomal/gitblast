@@ -59,7 +59,7 @@ export function githubUrl(r: Route): string {
   return `https://github.com${routePath(r)}`;
 }
 
-function safeDecode(s: string): string {
+export function safeDecode(s: string): string {
   try {
     return decodeURIComponent(s);
   } catch {

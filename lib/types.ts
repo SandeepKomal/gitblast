@@ -9,7 +9,6 @@ interface RepoSummary {
   repo: string;
   description: string | null;
   stars: number;
-  avatar: string;
 }
 
 export interface PRFile {
@@ -49,7 +48,6 @@ export interface PRReport {
     number: number;
     title: string;
     author: string;
-    authorAvatar: string;
     state: "open" | "closed" | "merged";
     draft: boolean;
     base: string;
@@ -81,7 +79,6 @@ export interface Frame {
   sha: string;
   date: string;
   author: string;
-  avatar?: string;
   message: string;
   /** 1-based position of this commit in the branch history. */
   index: number;
@@ -112,7 +109,7 @@ export interface Timelapse {
   totalCommits: number;
   frames: Frame[];
   milestones: Milestone[];
-  contributors: { login: string; avatar: string; contributions: number }[];
+  contributors: { login: string; contributions: number }[];
   langColors: Record<string, string>;
   partial: boolean;
   generatedAt: string;
@@ -122,7 +119,6 @@ export interface PullSummary {
   number: number;
   title: string;
   author: string;
-  avatar: string;
   updatedAt: string;
   draft: boolean;
 }

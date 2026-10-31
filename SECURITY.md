@@ -19,7 +19,7 @@ on this repository rather than in a public issue. You'll get a reply within a fe
 - **No code leaves the server and none is kept.** Source is held in memory during one analysis. Only the derived
   report is cached.
 - **Strict browser headers.** A content security policy limits scripts, images and connections to gitblast
-  itself (plus GitHub avatars), framing is denied, HTTPS is enforced with HSTS and the window is isolated
+  itself, framing is denied, HTTPS is enforced with HSTS and the window is isolated
   from cross-origin openers.
 - **Static analysis on every change.** CodeQL scans the TypeScript and the GitHub Actions workflows on every
   push and pull request, and weekly, with the extended security queries. Dependabot keeps dependencies current.

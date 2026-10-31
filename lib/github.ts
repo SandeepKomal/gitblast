@@ -80,7 +80,6 @@ export interface RepoMeta {
   language: string | null;
   createdAt: string;
   license: string | null;
-  ownerAvatar: string;
 }
 
 interface RawRepo {
@@ -96,7 +95,7 @@ interface RawRepo {
   created_at: string;
   license: { spdx_id: string | null } | null;
   topics?: string[];
-  owner: { login: string; avatar_url: string };
+  owner: { login: string };
 }
 
 function blocked(owner: string, repo: string): boolean {
@@ -135,7 +134,6 @@ export async function getRepo(owner: string, repo: string): Promise<RepoMeta> {
     language: r.language,
     createdAt: r.created_at,
     license: r.license?.spdx_id && r.license.spdx_id !== "NOASSERTION" ? r.license.spdx_id : null,
-    ownerAvatar: r.owner.avatar_url,
   };
 }
 

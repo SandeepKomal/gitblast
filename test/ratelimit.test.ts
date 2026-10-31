@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { clientKey } from "@/lib/ratelimit";
+import { allow, clientKey } from "@/lib/ratelimit";
 
 describe("clientKey", () => {
   it("prefers the proxy-set real IP", () => {
@@ -12,5 +12,13 @@ describe("clientKey", () => {
 
   it("falls back when no proxy headers are present", () => {
     expect(clientKey(new Headers())).toBe("local");
+  });
+});
+
+describe("allow", () => {
+  it("limits each client separately", () => {
+    for (let i = 0; i < 40; i++) expect(allow("192.0.2.1").ok).toBe(true);
+    expect(allow("192.0.2.1")).toMatchObject({ ok: false });
+    expect(allow("192.0.2.2").ok).toBe(true);
   });
 });

@@ -16,13 +16,12 @@ const meta: Args[0] = {
   language: "TypeScript",
   createdAt: "2020-01-01T00:00:00Z",
   license: "MIT",
-  ownerAvatar: "",
 };
 
 const pull: Args[1] = {
   number: 7,
   title: "Rework sessions",
-  user: { login: "dev", avatar_url: "" },
+  user: { login: "dev" },
   state: "open",
   merged_at: null,
   draft: false,

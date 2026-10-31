@@ -3,7 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { PRView } from "@/components/PRView";
 import { SiteFooter, SiteHeader } from "@/components/SiteChrome";
 import { TimelapseView } from "@/components/TimelapseView";
-import { parseSegments, routePath } from "@/lib/route";
+import { parseSegments, routePath, safeDecode } from "@/lib/route";
 
 interface Props {
   params: Promise<{ slug: string[] }>;
@@ -35,7 +35,7 @@ export default async function Page({ params }: Props) {
   const route = parseSegments(slug);
   if (!route) notFound();
   const canonical = routePath(route);
-  if (`/${slug.map(decodeSafe).join("/")}` !== canonical) redirect(canonical);
+  if (`/${slug.map(safeDecode).join("/")}` !== canonical) redirect(canonical);
 
   return (
     <>
@@ -52,12 +52,4 @@ export default async function Page({ params }: Props) {
       <SiteFooter />
     </>
   );
-}
-
-function decodeSafe(s: string): string {
-  try {
-    return decodeURIComponent(s);
-  } catch {
-    return s;
-  }
 }

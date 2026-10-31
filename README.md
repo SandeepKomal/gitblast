@@ -183,7 +183,10 @@ most load balancers do).
 
 - Only public repositories are shown. Private ones are refused even if the token could read them.
 - Repository owners can opt out by adding the `gitblast-optout` topic to their repository.
-- No cookies, analytics or tracking. Source code is never stored; only the derived report is cached.
+- No accounts, database, cookies, analytics or tracking. Source code is never stored; only the derived report is
+  cached in memory.
+- Visitors' browsers only ever talk to gitblast: no third-party scripts, fonts or images. IP addresses are used
+  only for rate limiting, held in memory as salted hashes for ten minutes and never logged.
 - gitblast is not affiliated with GitHub. It uses neither GitHub's logo nor "GitHub" in its name.
 
 See [SECURITY.md](SECURITY.md) for how to report a vulnerability.

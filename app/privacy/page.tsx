@@ -23,13 +23,19 @@ export default function Privacy() {
           <p>
             Source code is read in memory to find imports and thrown away when the analysis finishes. Only the result
             (file paths, counts and the dependency map) is cached for a few hours so that popular links stay fast. Commit
-            messages, usernames and avatars come from GitHub as they are publicly shown there. Email addresses are never
+            messages and usernames come from GitHub as they are publicly shown there. Email addresses are never
             stored or shown.
           </p>
 
           <h2>What it doesn&apos;t do</h2>
           <ul>
+            <li>No accounts, no database and no logs of who visited.</li>
             <li>No cookies, no analytics, no tracking pixels, no advertising.</li>
+            <li>No third-party scripts, fonts or images. Your browser only talks to gitblast.</li>
+            <li>
+              Your IP address is used only to rate-limit requests. It is held in memory as an anonymous hash for ten
+              minutes, then dropped, and never written anywhere.
+            </li>
             <li>No AI model is sent your code. Every result comes from parsing the code directly.</li>
             <li>Nothing is written to GitHub. gitblast only reads.</li>
           </ul>
